@@ -383,8 +383,7 @@
                                 <td class="td-materiali text-center">
                                     @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("UM_Mat"))
                                     {
-                                        <select value="@voce.UM_Mat"
-                                                @onchange="@((e) => OnCampoModificato(e, voce, "UM_Mat"))"
+                                        <select @bind="voce.UM_Mat"
                                                 class="campo-editabile combo-unita-misura">
                                             <option value="">-- Seleziona U.M. --</option>
                                             @foreach (var um in unitaMisuraMateriali)
@@ -409,9 +408,10 @@
                                     {
                                         @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("Qta_Mat"))
                                         {
-                                            <input value="@voce.Qta_Mat"
-                                                   @oninput="@((e) => OnCampoModificato(e, voce, "Qta_Mat"))"
-                                                   class="campo-editabile" />
+                                            <input @bind="voce.Qta_Mat"
+                                                   @oninput="@((e) => OnQtaMaterialeModificata(e, voce))"
+                                                   id="@($"qta-mat-{voce.Id}")"
+                                                   class="campo-editabile campo-obbligatorio" />
                                         }
                                         else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
                                         {
@@ -808,7 +808,27 @@
             Console.WriteLine($"❌ Errore caricamento unità di misura: {ex.Message}");
         }
     }
+    private async Task CompletaDatiMaterialiDaModello()
+    {
+        foreach (var voce in vociPreventivo)
+        {
+            if (!string.IsNullOrEmpty(voce.CodiceMateriale))
+            {
+                await CaricaDettagliMateriale(voce, voce.CodiceMateriale);
 
+                // Ricalcola la voce dopo aver completato i dati materiale
+                var lunghezzaFloat = (float)(imbarcazioneSelezionata?.Lunghezza ?? 0);
+                var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, lunghezzaFloat);
+
+                voce.ImportoVoce = voceCalcolata.ImportoVoce;
+                voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+                voce.TotaleVoce = voceCalcolata.TotaleVoce;
+            }
+        }
+
+        RicalcolaTotali();
+        StateHasChanged();
+    }
     #endregion
 
     #region GESTIONE SELEZIONI UTENTE
@@ -864,31 +884,42 @@
 
                     if (string.IsNullOrEmpty(subAttivita.CodiceMateriale))
                     {
-                        voce.UM_Mat = string.Empty; // Nessun materiale → campo vuoto
+                        // ✅ SOLA ATTIVITÀ - VISUALIZZAZIONE NORMALE
+                        voce.UM_Mat = string.Empty;
                         voce.Qta_Mat = 0;
                         voce.Costo_Mat = 0;
+
+                        // CALCOLA E CHIUDI
+                        var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
+                        voce.ImportoVoce = voceCalcolata.ImportoVoce;
+                        voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+                        voce.TotaleVoce = voceCalcolata.TotaleVoce;
+
+                        idRigaInEditing = null; // ✅ Esci dall'editing per sole attività
                     }
                     else
                     {
-                        voce.UM_Mat = "KG"; // Solo se c'è materiale
+                        // ✅ CON MATERIALE - ENTRa IN EDITING
+                        voce.UM_Mat = "KG";
                         voce.Qta_Mat = 0;
                         voce.Costo_Mat = 0;
-                    }
 
-                    // CARICA AUTOMATICAMENTE I DATI DEL MATERIALE SE PRESENTE
-                    if (!string.IsNullOrEmpty(voce.CodiceMateriale))
-                    {
+                        // CARICA DATI MATERIALE
                         await CaricaDettagliMateriale(voce, voce.CodiceMateriale);
+
+                        // CALCOLA SOLO ATTIVITÀ (MATERIALE = 0)
+                        var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
+                        voce.ImportoVoce = voceCalcolata.ImportoVoce;
+                        voce.ImportoMateriale = 0; // Ancora da definire
+                        voce.TotaleVoce = voceCalcolata.ImportoVoce; // Solo attività
+
+                        // ✅ ENTRa IN MODALITÀ EDITING PER MATERIALI
+                        AttivaEditing(voce); // ← USA IL METODO ESISTENTE!
+
+                        // ✅ AUTO-FOCUS SUL CAMPO QUANTITÀ
+                        await SetFocusOnQtaMateriale(voce.Id);
                     }
 
-                    // CALCOLA AUTOMATICAMENTE
-                    var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
-                    voce.ImportoVoce = voceCalcolata.ImportoVoce;
-                    voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
-                    voce.TotaleVoce = voceCalcolata.TotaleVoce;
-
-                    // STATO: VISUALIZZAZIONE (NON EDITING)
-                    idRigaInEditing = null;
                     RicalcolaTotali();
                     StateHasChanged();
                 }
@@ -897,6 +928,20 @@
             {
                 Console.WriteLine($"❌ Errore selezione voce: {ex.Message}");
             }
+        }
+    }
+    private async Task SetFocusOnQtaMateriale(int voceId)
+    {
+        // Piccolo delay per permettere il rendering
+        await Task.Delay(100);
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("setFocusOnElement", $"qta-mat-{voceId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Auto-focus non disponibile: {ex.Message}");
         }
     }
     private async Task OnMaterialeSelezionato(ChangeEventArgs e, DettaglioPreventivo voce)
@@ -931,9 +976,7 @@
 
         try
         {
-            //Console.WriteLine($"🔄 Applicazione modello: {modelloSelezionatoTitolo}");
-
-            // CARICA LE VOCI DEL MODELLO PER TITOLO
+            // CARICA LE VOCI DEL MODELLO
             var vociModello = await ModelliPreventiviService.GetVociModelloByTitolo(modelloSelezionatoTitolo);
 
             if (!vociModello.Any())
@@ -942,14 +985,16 @@
                 return;
             }
 
+            // CONVERTI IN PREVENTIVO (IMPORTI = 0)
             var nuoveVoci = ModelliPreventiviService.ConvertiModelloInPreventivo(vociModello, 0);
             vociPreventivo.Clear();
             vociPreventivo.AddRange(nuoveVoci);
 
-            RicalcolaTotali();
-            StateHasChanged();
+            // ✅ COMPLETA AUTOMATICAMENTE I DATI MATERIALE E RICALCOLA
+            await CompletaDatiMaterialiDaModello();
 
-            //Console.WriteLine($"🎉 Modello applicato con successo! {vociPreventivo.Count} voci caricate");
+            StateHasChanged();
+            Console.WriteLine($"🎉 Modello applicato con successo! {vociPreventivo.Count} voci caricate e ricalcolate");
         }
         catch (Exception ex)
         {
@@ -1127,6 +1172,8 @@
     #region GESTIONE STATO RIGHE E EDITING
     private StatoRiga StatoRigaCorrente(DettaglioPreventivo voce)
     {
+        Console.WriteLine($"🔍 StatoRigaCorrente: Id={voce.Id}, IdEditing={idRigaInEditing}, Attivita='{voce.DescrizioneAttivita}', Voce='{voce.DescrizioneVoce}', Materiale='{voce.CodiceMateriale}'");
+
         if (string.IsNullOrEmpty(voce.DescrizioneAttivita))
             return StatoRiga.Vuota;
         else if (string.IsNullOrEmpty(voce.DescrizioneVoce))
@@ -1294,7 +1341,26 @@
             Console.WriteLine($"❌ Errore ricalcolo automatico: {ex.Message}");
         }
     }
+    private async Task OnQtaMaterialeModificata(ChangeEventArgs e, DettaglioPreventivo voce)
+    {
+        var valore = e.Value?.ToString();
 
+        if (!string.IsNullOrEmpty(valore) && double.TryParse(valore, out double qtaMat))
+        {
+            voce.Qta_Mat = (float)qtaMat;
+
+            // RICALCOLA IMMEDIATAMENTE
+            await RicalcolaVoceInTempoReale(voce);
+
+            // ✅ VERIFICA SE TUTTI I CAMPI OBBLIGATORI SONO COMPLETATI
+            if (voce.Qta_Mat > 0 && voce.Costo_Mat > 0)
+            {
+                // ✅ AUTO-EXIT: TUTTI I DATI MATERIALE SONO COMPLETI
+                idRigaInEditing = null;
+                StateHasChanged();
+            }
+        }
+    }
     #endregion
 
     #region AZIONI PREVENTIVO
@@ -1705,3 +1771,5 @@
     #endregion
 
 }
+
+

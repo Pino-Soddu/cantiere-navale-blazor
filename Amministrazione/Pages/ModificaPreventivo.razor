@@ -425,9 +425,7 @@ else
                                     {
                                         @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("UM_Mat"))
                                         {
-                                            <select value="@voce.UM_Mat"
-                                                    @onchange="@((e) => OnCampoModificato(e, voce, "UM_Mat"))"
-                                                    class="campo-editabile combo-unita-misura">
+                                            <select @bind="voce.UM_Mat" class="campo-editabile combo-unita-misura">
                                                 <option value="">-- Seleziona U.M. --</option>
                                                 @foreach (var um in unitaMisuraMateriali)
                                                 {
@@ -646,7 +644,14 @@ else
     private bool mostraSuccesso = false;
 
     // Enumerazioni
-    private enum StatoRiga { Vuota, AttivitaSelezionata, Visualizzazione, Editing }
+    private enum StatoRiga 
+    { 
+        Vuota, 
+        AttivitaSelezionata, 
+        Visualizzazione, 
+        Editing,
+        AttesaMateriale // ✅ NUOVO STATO PER MIGLIORARE UI 
+    }
     #endregion
 
     #region PROPRIETÀ CALCOLATE
@@ -917,31 +922,38 @@ else
 
                     if (string.IsNullOrEmpty(subAttivita.CodiceMateriale))
                     {
-                        voce.UM_Mat = string.Empty; // Nessun materiale → campo vuoto
+                        // ✅ SOLA ATTIVITÀ - VISUALIZZAZIONE NORMALE
+                        voce.UM_Mat = string.Empty;
                         voce.Qta_Mat = 0;
                         voce.Costo_Mat = 0;
+                    
+                        // CALCOLA E CHIUDI
+                        await CalcolaEChiudiVoce(voce);
+                        idRigaInEditing = null; // Esci dall'editing
                     }
                     else
                     {
-                        voce.UM_Mat = "KG"; // Solo se c'è materiale
+                        // ✅ CON MATERIALE - ENTRA IN STATO ATTESA
+                        voce.UM_Mat = "KG"; // Default
                         voce.Qta_Mat = 0;
                         voce.Costo_Mat = 0;
-                    }
 
-                    // CARICA AUTOMATICAMENTE I DATI DEL MATERIALE SE PRESENTE
-                    if (!string.IsNullOrEmpty(voce.CodiceMateriale))
-                    {
+                        // ✅ ENTRa IN MODALITÀ ATTESA MATERIALE
+                        idRigaInEditing = voce.Id;
+
+                        // CARICA DATI MATERIALE
                         await CaricaDettagliMateriale(voce, voce.CodiceMateriale);
+                    
+                        // CALCOLA SOLO ATTIVITÀ (MATERIALE = 0)
+                        var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
+                        voce.ImportoVoce = voceCalcolata.ImportoVoce;
+                        voce.ImportoMateriale = 0; // Ancora da definire
+                        voce.TotaleVoce = voceCalcolata.ImportoVoce; // Solo attività
+
+                        // ✅ AUTO-FOCUS SUL CAMPO QUANTITÀ
+                        await SetFocusOnQtaMateriale(voce.Id);
                     }
 
-                    // CALCOLA AUTOMATICAMENTE
-                    var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
-                    voce.ImportoVoce = voceCalcolata.ImportoVoce;
-                    voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
-                    voce.TotaleVoce = voceCalcolata.TotaleVoce;
-
-                    // STATO: VISUALIZZAZIONE (NON EDITING)
-                    idRigaInEditing = null;
                     RicalcolaTotali();
                     StateHasChanged();
                 }
@@ -950,6 +962,29 @@ else
             {
                 Console.WriteLine($"❌ Errore selezione voce: {ex.Message}");
             }
+        }
+    }
+    private async Task CalcolaEChiudiVoce(DettaglioPreventivo voce)
+    {
+        var lunghezzaFloat = (float)(imbarcazioneSelezionata?.Lunghezza ?? 0);
+        var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, lunghezzaFloat);
+
+        voce.ImportoVoce = voceCalcolata.ImportoVoce;
+        voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+        voce.TotaleVoce = voceCalcolata.TotaleVoce;
+    }
+    private async Task SetFocusOnQtaMateriale(int voceId)
+    {
+        // Piccolo delay per permettere il rendering
+        await Task.Delay(100);
+    
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("setFocusOnElement", $"qta-mat-{voceId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Auto-focus non disponibile: {ex.Message}");
         }
     }
     private async Task OnMaterialeSelezionato(ChangeEventArgs e, DettaglioPreventivo voce)
@@ -1215,15 +1250,7 @@ else
                         if (decimal.TryParse(valore, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal costoMat))
                             voce.Costo_Mat = (float)costoMat;
                         break;
-                    case "UnitaMisura":
-                        voce.UnitaMisura = valore;
-                        break;
-                    case "CodiceMateriale":
-                        voce.CodiceMateriale = valore;
-                        // Se è materiale, carica anche i dettagli
-                        if (!string.IsNullOrEmpty(valore))
-                            await CaricaDettagliMateriale(voce, valore);
-                        break;
+                    // I campi UnitaMisura, UM_Mat e CodiceMateriale sono ora gestiti da @bind
                 }
 
                 await RicalcolaVoceInTempoReale(voce);
@@ -1234,7 +1261,6 @@ else
             }
         }
     }
-
     private async Task CaricaDettagliMateriale(DettaglioPreventivo voce, string codiceMateriale)
     {
         try
@@ -1643,30 +1669,65 @@ else
 
     // METODO PER CONVERTIRE PREVENTIVO → MODELLO
     private List<ModelloPreventivo> ConvertiPreventivoInModello(string nomeModello)
+{
+    var vociModello = new List<ModelloPreventivo>();
+    var voceId = 1;
+
+    foreach (var dettaglio in vociPreventivo)
     {
-        var vociModello = new List<ModelloPreventivo>();
-        var voceId = 1;
-    
-        foreach (var dettaglio in vociPreventivo)
+        var voceModello = new ModelloPreventivo
         {
-            vociModello.Add(new ModelloPreventivo
+            TitoloPreventivo = nomeModello,
+            VoceId = voceId++,
+            DescrizioneAttivita = dettaglio.DescrizioneAttivita,
+            DescrizioneVoce = dettaglio.DescrizioneVoce,
+            N_Operatori = dettaglio.N_Operatori,
+            UnitaMisura = dettaglio.UnitaMisura,
+            Qta_Voce = (double)dettaglio.Qta_Voce,
+            CodiceMateriale = dettaglio.CodiceMateriale ?? string.Empty,
+            UM_Mat = dettaglio.UM_Mat ?? string.Empty,
+
+            // ✅ ATTIVITÀ - SEMPRE SALVA GLI IMPORTI
+            ImportoVoce = (decimal)dettaglio.ImportoVoce,
+            TotaleVoce = (decimal)dettaglio.TotaleVoce,
+
+            // ✅ INIZIALIZZA I CAMPI MATERIALE A ZERO
+            Qta_Mat = 0,
+            Costo_Mat = 0,
+            ImportoMateriale = 0
+        };
+
+        // ✅ GESTIONE MATERIALI - STRATEGIA DIFFERENZIATA
+        if (!string.IsNullOrEmpty(dettaglio.CodiceMateriale))
+        {
+            bool isMaterialeVariabile = !string.IsNullOrEmpty(dettaglio.UM_Mat) && 
+                                      (dettaglio.UM_Mat.Contains("/ML") || dettaglio.UM_Mat.Contains("/MQ"));
+
+            if (isMaterialeVariabile)
             {
-                TitoloPreventivo = nomeModello,
-                VoceId = voceId++,
-                DescrizioneAttivita = dettaglio.DescrizioneAttivita,
-                DescrizioneVoce = dettaglio.DescrizioneVoce,
-                N_Operatori = dettaglio.N_Operatori,
-                UnitaMisura = dettaglio.UnitaMisura,
-                Qta_Voce = (double)dettaglio.Qta_Voce,
-                ImportoVoce = (decimal)dettaglio.ImportoVoce,
-                CodiceMateriale = dettaglio.CodiceMateriale,
-                ImportoMateriale = (decimal)dettaglio.ImportoMateriale,
-                TotaleVoce = (decimal)dettaglio.TotaleVoce
-            });
+                // ❌ MATERIALE VARIABILE (KG/ML, LT/ML) - NON SALVARE QUANTITÀ E COSTI
+                // Mantieni tutto a zero (già inizializzato sopra)
+                
+                // ⚠️ AZZERA IL TOTALE VOCE PER MATERIALI VARIABILI
+                voceModello.TotaleVoce = voceModello.ImportoVoce; // Solo attività
+            }
+            else
+            {
+                // ✅ MATERIALE FISSO (KG, LT, NUM) - SALVA TUTTO
+                // ✅ USA GetValueOrDefault() PER EVITARE ERRORI DI CONVERSIONE
+                voceModello.Qta_Mat = (double)dettaglio.Qta_Mat;
+                voceModello.Costo_Mat = (decimal)(dettaglio.Costo_Mat); // float → decimal
+                voceModello.ImportoMateriale = (decimal)(dettaglio.ImportoMateriale); // float → decimal
+                // TotaleVoce già impostato sopra include attività + materiale
+            }
         }
-    
-        return vociModello;
+        // ✅ PER SOLE ATTIVITÀ (NESSUN MATERIALE) - MANTIENI TOTALE VOCE (già fatto sopra)
+
+        vociModello.Add(voceModello);
     }
+
+    return vociModello;
+}
 
     private void MostraErrore(string messaggio)
     {

@@ -103,12 +103,12 @@ namespace CNP.Amministrazione.Services
             await connection.OpenAsync();
 
             var query = @"SELECT 
-                Id, TitoloPreventivo, VoceId, DescrizioneAttivita, DescrizioneVoce,
-                N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
-                CodiceMateriale, UM_Mat, Costo_Mat, Qta_Mat, ImportoMateriale, TotaleVoce
-             FROM ModelliPreventivi 
-             WHERE TitoloPreventivo = @TitoloModello
-             ORDER BY VoceId";
+            Id, TitoloPreventivo, VoceId, DescrizioneAttivita, DescrizioneVoce,
+            N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
+            CodiceMateriale, UM_Mat, Costo_Mat, Qta_Mat, ImportoMateriale, TotaleVoce
+         FROM ModelliPreventivi 
+         WHERE TitoloPreventivo = @TitoloModello
+         ORDER BY VoceId";
 
             using var command = new SqlCommand(query, connection);
             command.Parameters.AddWithValue("@TitoloModello", titoloModello);
@@ -121,30 +121,23 @@ namespace CNP.Amministrazione.Services
                 {
                     var voce = new ModelloPreventivo
                     {
-                        // CAMPI INTERI (NON NVARCHAR)
+                        // ✅ SOLO DATI DI CONFIGURAZIONE
                         Id = reader.GetInt32("Id"),
                         VoceId = reader.GetInt32("VoceId"),
-
-                        // CAMPI STRINGA CON GESTIONE NULL
                         TitoloPreventivo = reader.GetString("TitoloPreventivo"),
                         DescrizioneAttivita = reader.GetString("DescrizioneAttivita"),
                         DescrizioneVoce = reader.GetString("DescrizioneVoce"),
                         UnitaMisura = reader.GetString("UnitaMisura"),
                         CodiceMateriale = reader.IsDBNull("CodiceMateriale") ? string.Empty : reader.GetString("CodiceMateriale"),
-
-                        // CAMPI CHE POTREBBERO ESSERE NULL - GESTIONE MIGLIORATA
                         UM_Mat = reader.IsDBNull("UM_Mat") ? string.Empty : reader.GetString("UM_Mat"),
 
-                        // CAMPI NVARCHAR → CONVERSIONE A NUMERI CON GESTIONE NULL
-                        N_Operatori = reader.IsDBNull("N_Operatori") ? 0 : ParseInt(reader.GetString("N_Operatori")),
-                        Qta_Voce = reader.IsDBNull("Qta_Voce") ? 0 : ParseDouble(reader.GetString("Qta_Voce")),
-                        ImportoVoce = reader.IsDBNull("ImportoVoce") ? 0 : ParseDecimal(reader.GetString("ImportoVoce")),
+                        // ✅ CONVERSIONI NUMERICHE SOLO PER CAMPI UTILIZZATI
+                        N_Operatori = ParseInt(reader.GetString("N_Operatori")),
+                        Qta_Voce = ParseDouble(reader.GetString("Qta_Voce")),
 
-                        // CAMPI MATERIALI CHE POTREBBERO ESSERE NULL
-                        Costo_Mat = reader.IsDBNull("Costo_Mat") ? 0 : ParseDecimal(reader.GetString("Costo_Mat")),
-                        Qta_Mat = reader.IsDBNull("Qta_Mat") ? 0 : ParseDouble(reader.GetString("Qta_Mat")),
-                        ImportoMateriale = reader.IsDBNull("ImportoMateriale") ? 0 : ParseDecimal(reader.GetString("ImportoMateriale")),
-                        TotaleVoce = reader.IsDBNull("TotaleVoce") ? 0 : ParseDecimal(reader.GetString("TotaleVoce"))
+                        // ❌ IGNORA GLI IMPORTI - SARANNO RICALCOLATI
+                        // ImportoVoce, ImportoMateriale, TotaleVoce, Costo_Mat, Qta_Mat
+                        // vengono lasciati a valori di default (0)
                     };
 
                     voci.Add(voce);
@@ -152,7 +145,6 @@ namespace CNP.Amministrazione.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"❌ ERRORE conversione voce: {ex.Message}");
-                    // CONTINUA CON PROSSIMA VOCE
                 }
             }
 
@@ -226,54 +218,118 @@ namespace CNP.Amministrazione.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            // Inserisci ogni voce del modello (NON specificare l'Id - lo farà il database)
-            var insertQuery = @"INSERT INTO ModelliPreventivi (
-                TitoloPreventivo, VoceId, DescrizioneAttivita, DescrizioneVoce,
-                N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
-                CodiceMateriale, ImportoMateriale, TotaleVoce
-                 ) VALUES (
-                    @TitoloPreventivo, @VoceId, @DescrizioneAttivita, @DescrizioneVoce,
-                    @N_Operatori, @UnitaMisura, @Qta_Voce, @ImportoVoce,
-                    @CodiceMateriale, @ImportoMateriale, @TotaleVoce
-                 );
-                 SELECT SCOPE_IDENTITY();"; // ← RESTITUISCE L'ID GENERATO
+            // ✅ PRIMA VERIFICA CHE LA TABELLA ABBIA UNA IDENTITY COLUMN
+            var checkIdentityQuery = @"
+        SELECT COUNT(*) 
+        FROM sys.identity_columns 
+        WHERE object_id = OBJECT_ID('ModelliPreventivi')";
+
+            using var checkCommand = new SqlCommand(checkIdentityQuery, connection);
+            var hasIdentity = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
 
             int modelloId = 0;
 
-            foreach (var voce in voci)
+            if (hasIdentity)
             {
-                using var command = new SqlCommand(insertQuery, connection);
+                // ✅ USA SCOPE_IDENTITY() SOLO SE C'È UNA IDENTITY COLUMN
+                var insertQuery = @"INSERT INTO ModelliPreventivi (
+            TitoloPreventivo, VoceId, DescrizioneAttivita, DescrizioneVoce,
+            N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
+            CodiceMateriale, UM_Mat, Qta_Mat, Costo_Mat, ImportoMateriale, TotaleVoce
+         ) VALUES (
+            @TitoloPreventivo, @VoceId, @DescrizioneAttivita, @DescrizioneVoce,
+            @N_Operatori, @UnitaMisura, @Qta_Voce, @ImportoVoce,
+            @CodiceMateriale, @UM_Mat, @Qta_Mat, @Costo_Mat, @ImportoMateriale, @TotaleVoce
+         )";
 
-                // RIMUOVI il parametro Id
-                command.Parameters.AddWithValue("@TitoloPreventivo", titoloModello);
-                command.Parameters.AddWithValue("@VoceId", voce.VoceId);
-                command.Parameters.AddWithValue("@DescrizioneAttivita", voce.DescrizioneAttivita);
-                command.Parameters.AddWithValue("@DescrizioneVoce", voce.DescrizioneVoce);
-                command.Parameters.AddWithValue("@N_Operatori", voce.N_Operatori);
-                command.Parameters.AddWithValue("@UnitaMisura", voce.UnitaMisura);
-                command.Parameters.AddWithValue("@Qta_Voce", voce.Qta_Voce);
-                command.Parameters.AddWithValue("@ImportoVoce", voce.ImportoVoce);
-                command.Parameters.AddWithValue("@CodiceMateriale", voce.CodiceMateriale);
-                command.Parameters.AddWithValue("@ImportoMateriale", voce.ImportoMateriale);
-                command.Parameters.AddWithValue("@TotaleVoce", voce.TotaleVoce);
+                foreach (var voce in voci)
+                {
+                    using var command = new SqlCommand(insertQuery, connection);
 
-                // Esegui e ottieni l'ID generato (solo per la prima voce)
-                var result = await command.ExecuteScalarAsync();
-                if (modelloId == 0 && result != DBNull.Value)
+                    // Aggiungi tutti i parametri...
+                    command.Parameters.AddWithValue("@TitoloPreventivo", titoloModello);
+                    command.Parameters.AddWithValue("@VoceId", voce.VoceId);
+                    command.Parameters.AddWithValue("@DescrizioneAttivita", voce.DescrizioneAttivita);
+                    command.Parameters.AddWithValue("@DescrizioneVoce", voce.DescrizioneVoce);
+                    command.Parameters.AddWithValue("@N_Operatori", voce.N_Operatori);
+                    command.Parameters.AddWithValue("@UnitaMisura", voce.UnitaMisura);
+                    command.Parameters.AddWithValue("@Qta_Voce", voce.Qta_Voce);
+                    command.Parameters.AddWithValue("@ImportoVoce", voce.ImportoVoce);
+                    command.Parameters.AddWithValue("@CodiceMateriale",
+                        string.IsNullOrEmpty(voce.CodiceMateriale) ? (object)DBNull.Value : voce.CodiceMateriale);
+                    command.Parameters.AddWithValue("@UM_Mat",
+                        string.IsNullOrEmpty(voce.UM_Mat) ? (object)DBNull.Value : voce.UM_Mat);
+                    command.Parameters.AddWithValue("@Qta_Mat", voce.Qta_Mat);
+                    command.Parameters.AddWithValue("@Costo_Mat", voce.Costo_Mat);
+                    command.Parameters.AddWithValue("@ImportoMateriale", voce.ImportoMateriale);
+                    command.Parameters.AddWithValue("@TotaleVoce", voce.TotaleVoce);
+
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                // ✅ RECUPERA L'ID IN MODO SICURO
+                using var idCommand = new SqlCommand("SELECT SCOPE_IDENTITY()", connection);
+                var result = await idCommand.ExecuteScalarAsync();
+
+                if (result != null && result != DBNull.Value)
                 {
                     modelloId = Convert.ToInt32(result);
+                }
+            }
+            else
+            {
+                // ✅ FALLBACK: USA MAX(ID) + 1 SE NON C'È IDENTITY
+                var maxIdQuery = "SELECT ISNULL(MAX(Id), 0) FROM ModelliPreventivi";
+                using var maxCommand = new SqlCommand(maxIdQuery, connection);
+                modelloId = Convert.ToInt32(await maxCommand.ExecuteScalarAsync()) + 1;
+
+                var insertQuery = @"INSERT INTO ModelliPreventivi (
+            Id, TitoloPreventivo, VoceId, DescrizioneAttivita, DescrizioneVoce,
+            N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
+            CodiceMateriale, UM_Mat, Qta_Mat, Costo_Mat, ImportoMateriale, TotaleVoce
+         ) VALUES (
+            @Id, @TitoloPreventivo, @VoceId, @DescrizioneAttivita, @DescrizioneVoce,
+            @N_Operatori, @UnitaMisura, @Qta_Voce, @ImportoVoce,
+            @CodiceMateriale, @UM_Mat, @Qta_Mat, @Costo_Mat, @ImportoMateriale, @TotaleVoce
+         )";
+
+                foreach (var voce in voci)
+                {
+                    using var command = new SqlCommand(insertQuery, connection);
+
+                    command.Parameters.AddWithValue("@Id", modelloId);
+                    // ... altri parametri uguali a sopra
+                    command.Parameters.AddWithValue("@TitoloPreventivo", titoloModello);
+                    command.Parameters.AddWithValue("@VoceId", voce.VoceId);
+                    command.Parameters.AddWithValue("@DescrizioneAttivita", voce.DescrizioneAttivita);
+                    command.Parameters.AddWithValue("@DescrizioneVoce", voce.DescrizioneVoce);
+                    command.Parameters.AddWithValue("@N_Operatori", voce.N_Operatori);
+                    command.Parameters.AddWithValue("@UnitaMisura", voce.UnitaMisura);
+                    command.Parameters.AddWithValue("@Qta_Voce", voce.Qta_Voce);
+                    command.Parameters.AddWithValue("@ImportoVoce", voce.ImportoVoce);
+                    command.Parameters.AddWithValue("@CodiceMateriale",
+                        string.IsNullOrEmpty(voce.CodiceMateriale) ? (object)DBNull.Value : voce.CodiceMateriale);
+                    command.Parameters.AddWithValue("@UM_Mat",
+                        string.IsNullOrEmpty(voce.UM_Mat) ? (object)DBNull.Value : voce.UM_Mat);
+                    command.Parameters.AddWithValue("@Qta_Mat", voce.Qta_Mat);
+                    command.Parameters.AddWithValue("@Costo_Mat", voce.Costo_Mat);
+                    command.Parameters.AddWithValue("@ImportoMateriale", voce.ImportoMateriale);
+                    command.Parameters.AddWithValue("@TotaleVoce", voce.TotaleVoce);
+
+                    await command.ExecuteNonQueryAsync();
                 }
             }
 
             return modelloId;
         }
+
         // ELIMINA MODELLO PREVENTIVO
         public async Task<bool> EliminaModelloPreventivo(int modelloId)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var query = "DELETE FROM ModelliPreventiv1 WHERE Id = @ModelloId";
+            var query = "DELETE FROM ModelliPreventivi WHERE Id = @ModelloId";
 
             using var command = new SqlCommand(query, connection);
             command.Parameters.AddWithValue("@ModelloId", modelloId);
@@ -302,7 +358,6 @@ namespace CNP.Amministrazione.Services
         #region APPLICAZIONE MODELLO A PREVENTIVO
 
         // CONVERTE VOCI MODELLO IN VOCI PREVENTIVO REALE
-        // CONVERTE VOCI MODELLO IN VOCI PREVENTIVO REALE - VERSIONE MIGLIORATA
         public List<DettaglioPreventivo> ConvertiModelloInPreventivo(List<ModelloPreventivo> vociModello, decimal lunghezzaBarca = 0)
         {
             var vociPreventivo = new List<DettaglioPreventivo>();
@@ -320,33 +375,21 @@ namespace CNP.Amministrazione.Services
                     UnitaMisura = voceModello.UnitaMisura,
                     Qta_Voce = (float)voceModello.Qta_Voce,
                     CodiceMateriale = voceModello.CodiceMateriale,
-                    ImportoVoce = (float)voceModello.ImportoVoce,
-                    ImportoMateriale = (float)voceModello.ImportoMateriale,
-                    TotaleVoce = (float)voceModello.TotaleVoce
-                };
+                    UM_Mat = voceModello.UM_Mat,
 
-                // 🔥 MODIFICA: PULISCI COMPLETAMENTE I CAMPI MATERIALE SE NON C'È CODICE MATERIALE
-                if (string.IsNullOrWhiteSpace(voceModello.CodiceMateriale))
-                {
-                    vocePreventivo.UM_Mat = string.Empty;
-                    vocePreventivo.Qta_Mat = 0;
-                    vocePreventivo.Costo_Mat = 0;
-                    vocePreventivo.ImportoMateriale = 0;
-                }
-                else
-                {
-                    // Se c'è codice materiale, mantieni i valori del modello
-                    vocePreventivo.UM_Mat = voceModello.UM_Mat ?? string.Empty;
-                    vocePreventivo.Qta_Mat = (float)voceModello.Qta_Mat;
-                    vocePreventivo.Costo_Mat = (float)voceModello.Costo_Mat;
-                }
+                    // ✅ IMPORTI INIZIALIZZATI A ZERO - SARANNO CALCOLATI SUCCESSIVAMENTE
+                    ImportoVoce = 0,
+                    ImportoMateriale = 0,
+                    TotaleVoce = 0,
+                    Qta_Mat = 0,
+                    Costo_Mat = 0
+                };
 
                 vociPreventivo.Add(vocePreventivo);
             }
 
             return vociPreventivo;
         }
-
         #endregion
     }
 }

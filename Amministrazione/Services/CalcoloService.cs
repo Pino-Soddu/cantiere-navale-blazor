@@ -168,7 +168,7 @@ namespace CNP.Amministrazione.Services
 
                 if (materiale != null && materiale.PrezzoUnitario.HasValue)
                 {
-                    Console.WriteLine($"✅ Prezzo materiale {codiceMateriale}: {materiale.PrezzoUnitario.Value}€");
+                    //Console.WriteLine($"✅ Prezzo materiale {codiceMateriale}: {materiale.PrezzoUnitario.Value}€");
                     return materiale.PrezzoUnitario.Value;
                 }
 
