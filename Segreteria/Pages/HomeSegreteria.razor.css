@@ -1,0 +1,87 @@
+.segreteria-container {
+    padding: 1rem;
+}
+
+/* CARD SENZA BORDI ESTERNI */
+.card {
+    border: none;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.card-body {
+    padding: 0;
+}
+
+    /* FORZA IL CARD-BODY AD ESSERE BLOCCO */
+    .card-body[style*="flex"] {
+        display: block !important;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+/* HEADER RICERCA - DEFINIZIONE UNICA */
+.header-ricerca {
+    flex: 1;
+    max-width: 400px;
+    margin-right: 1rem;
+}
+
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.counter-badge {
+    background-color: var(--cnf-blu-medio);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* IMPEDISCE LO SCROLL DELLA PAGINA */
+.layout-segreteria {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.container-fluid {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    flex: 1;
+    overflow: hidden;
+}
+
+.card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* PULSANTI ANAGRAFICA COMPATTI NELL'HEADER */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* HEADER COMPATTO PER SELEZIONE ANAGRAFICA */
+.card-header h5 {
+    margin-bottom: 0 !important;
+}
+

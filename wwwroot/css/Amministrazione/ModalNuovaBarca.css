@@ -1,0 +1,91 @@
+
+/* Stessi stili del Modal Cliente */
+.info-cliente {
+    background: #e8f5e8;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #27ae60;
+    font-size: 12px;
+}
+
+/* AGGIUNGI QUESTI STILI */
+.info-cliente-associato {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #e8f5e8;
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 3px solid #27ae60;
+    margin-top: 10px;
+}
+
+.icona-cliente {
+    font-size: 18px;
+}
+
+.dettagli-cliente {
+    flex: 1;
+}
+
+    .dettagli-cliente strong {
+        display: block;
+        font-size: 12px;
+        color: #2c3e50;
+    }
+
+    .dettagli-cliente div {
+        font-size: 13px;
+        color: #27ae60;
+        font-weight: 600;
+    }
+
+.alert-danger {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+/* LAYOUT MIGLIORATO PER TIPO E LUNGHEZZA */
+.form-grid-modale-migliorato {
+    display: grid;
+    grid-template-columns: 1fr 120px; /* Combo largo | Campo compatto */
+    gap: 10px;
+    align-items: end;
+}
+
+.combo-tipo-largo {
+    grid-column: 1;
+}
+
+.campo-lunghezza-compatto {
+    grid-column: 2;
+}
+
+.combo-largo {
+    width: 100%;
+    min-width: 200px;
+}
+
+.campo-compatto {
+    width: 100%;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* MANTIENI STILI ESISTENTI PER GLI ALTRI ELEMENTI */
+.form-modale {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group-modale {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

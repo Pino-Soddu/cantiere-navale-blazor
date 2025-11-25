@@ -1,0 +1,160 @@
+﻿<link href="css/Amministrazione/ModalNuovoCliente.css" rel="stylesheet" />
+
+@using CNP.Segreteria.Models
+@using CNP.Amministrazione.Services
+
+<div class="modal-overlay @(Visibile ? "mostrato" : "nascosto")">
+    <div class="modal-contenuto-compact">
+        <div class="modal-intestazione-compact">
+            <h3>➕ Nuovo Cliente</h3>
+            <button class="btn-chiusura" @onclick="Chiudi">✕</button>
+        </div>
+
+        <div class="modal-corpo-compact">
+            <div class="form-modale">
+                <div class="form-group-modale">
+                    <label>Ragione Sociale *</label>
+                    <input @bind="NuovoCliente.RagioneSociale" class="input-modale"
+                           placeholder="Nome o ragione sociale" />
+                    @if (!ragioneSocialeValida)
+                    {
+                        <span class="validazione-errore">Campo obbligatorio</span>
+                    }
+                </div>
+
+                <div class="form-group-modale">
+                    <label>Indirizzo *</label>
+                    <input @bind="NuovoCliente.Indirizzo" class="input-modale"
+                           placeholder="Via e numero civico" />
+                </div>
+
+                <div class="form-grid-modale">
+                    <div class="form-group-modale">
+                        <label>CAP *</label>
+                        <input @bind="NuovoCliente.CAP" class="input-modale"
+                               placeholder="CAP" maxlength="5" />
+                    </div>
+                    <div class="form-group-modale">
+                        <label>Comune *</label>
+                        <input @bind="NuovoCliente.Comune" class="input-modale"
+                               placeholder="Comune" />
+                    </div>
+                    <div class="form-group-modale">
+                        <label>Prov. *</label>
+                        <input @bind="NuovoCliente.SiglaProvincia" class="input-modale"
+                               placeholder="PR" maxlength="2" style="text-transform:uppercase" />
+                    </div>
+                </div>
+
+                <div class="form-grid-modale">
+                    <div class="form-group-modale">
+                        <label>Telefono</label>
+                        <input @bind="NuovoCliente.Telefono" class="input-modale"
+                               placeholder="Telefono" />
+                    </div>
+                    <div class="form-group-modale">
+                        <label>Email</label>
+                        <input @bind="NuovoCliente.Email" class="input-modale"
+                               placeholder="email@esempio.com" type="email" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-pulsanti-compact">
+            <button class="btn btn-outline" @onclick="Chiudi">Annulla</button>
+            <button class="btn btn-success" @onclick="SalvaCliente"
+                    disabled="@(!DatiValidi)">
+                💾 Salva Cliente
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Visibile { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibileChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<Cliente> OnClienteSalvato { get; set; }
+
+    [Inject]
+    private ClientiService ClientiService { get; set; } = default!;
+
+    private Cliente NuovoCliente { get; set; } = new();
+    private bool ragioneSocialeValida = true;
+    private bool salvataggioInCorso = false;
+
+    private bool DatiValidi => !string.IsNullOrWhiteSpace(NuovoCliente.RagioneSociale) &&
+                              !string.IsNullOrWhiteSpace(NuovoCliente.Indirizzo) &&
+                              !string.IsNullOrWhiteSpace(NuovoCliente.Comune) &&
+                              !string.IsNullOrWhiteSpace(NuovoCliente.CAP) &&
+                              !string.IsNullOrWhiteSpace(NuovoCliente.SiglaProvincia);
+
+    private async Task SalvaCliente()
+    {
+        if (!DatiValidi || salvataggioInCorso) return;
+        
+        salvataggioInCorso = true;
+        ragioneSocialeValida = !string.IsNullOrWhiteSpace(NuovoCliente.RagioneSociale);
+        StateHasChanged();
+
+        try
+        {
+            // Verifica se cliente già esiste
+            var esiste = await ClientiService.ClienteEsiste(NuovoCliente.RagioneSociale);
+            if (esiste)
+            {
+                // TODO: Mostrare messaggio errore
+                Console.WriteLine($"Cliente {NuovoCliente.RagioneSociale} già esistente");
+                return;
+            }
+
+            // Salva cliente e ottieni ID
+            var nuovoClienteId = await ClientiService.AggiungiClienteEssenziale(NuovoCliente);
+
+            if (nuovoClienteId > 0)
+            {
+                // Assegna l'ID al cliente
+                NuovoCliente.ClienteID = nuovoClienteId;
+
+                await OnClienteSalvato.InvokeAsync(NuovoCliente);
+                await Chiudi();
+
+                Console.WriteLine($"Cliente salvato con ID: {nuovoClienteId}");
+            }
+            else
+            {
+                Console.WriteLine("Errore nel salvataggio cliente - ID non restituito");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore salvataggio cliente: {ex.Message}");
+        }
+        finally
+        {
+            salvataggioInCorso = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Chiudi()
+    {
+        NuovoCliente = new Cliente();
+        ragioneSocialeValida = true;
+        await VisibileChanged.InvokeAsync(false);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Visibile)
+        {
+            NuovoCliente = new Cliente();
+            ragioneSocialeValida = true;
+        }
+    }
+}

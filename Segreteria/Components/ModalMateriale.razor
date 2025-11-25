@@ -1,0 +1,155 @@
+﻿@using CNP.Segreteria.Models
+
+<div class="modal @(Mostra ? "d-block" : "d-none")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <!-- HEADER COMPATTO -->
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title fs-6">
+                    @(Materiale.IDMateriale > 0 ? "Modifica Materiale" : "Nuovo Materiale")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModal"></button>
+            </div>
+
+            <div class="modal-body py-2">
+                <div class="container-fluid">
+                    <!-- PRIMA RIGA - DATI IDENTIFICATIVI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 1 - DATI PRINCIPALI (AZZURRO) -->
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-2">
+                                <div class="card-header bg-primary text-white py-1">
+                                    <h6 class="mb-0 small">📦 Dati Identificativi</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold small">Codice Materiale *</label>
+                                        <input class="form-control form-control-sm" @bind="Materiale.CodiceMateriale" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Descrizione</label>
+                                        <input class="form-control form-control-sm" @bind="Materiale.Descrizione" />
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Unità Misura</label>
+                                        <select class="form-select form-select-sm" @bind="Materiale.UnitaMisura">
+                                            <option value="">Seleziona unità</option>
+                                            <option value="PZ">Pezzi (PZ)</option>
+                                            <option value="KG">Chilogrammi (KG)</option>
+                                            <option value="MT">Metri (MT)</option>
+                                            <option value="L">Litri (L)</option>
+                                            <option value="M2">Metri quadri (M2)</option>
+                                            <option value="M3">Metri cubi (M3)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 2 - PREZZO E QUANTITÀ (VERDE CHIARO) -->
+                        <div class="col-md-6">
+                            <div class="card border-success mb-2">
+                                <div class="card-header bg-success text-white py-1">
+                                    <h6 class="mb-0 small">💰 Prezzo e Quantità</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0fff0;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Prezzo Unitario (€)</label>
+                                        <input class="form-control form-control-sm" @bind="Materiale.PrezzoUnitario" type="number" step="0.01" />
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Quantità Disponibile</label>
+                                                <input class="form-control form-control-sm" @bind="Materiale.QuantitaDisponibile" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Quantità Minima</label>
+                                                <input class="form-control form-control-sm" @bind="Materiale.QuantitaMinima" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Data Ultimo Ordine</label>
+                                        <input class="form-control form-control-sm" @bind="Materiale.DataUltimoOrdine" type="date" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECONDA RIGA - FORNITORE E NOTE -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 3 - FORNITORE (GIALLO) -->
+                        <div class="col-md-6">
+                            <div class="card border-warning mb-2">
+                                <div class="card-header bg-warning text-dark py-1">
+                                    <h6 class="mb-0 small">🏢 Fornitore</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #fffaf0;">
+                                    <div class="mb-1">
+                                        <label class="form-label small">Fornitore</label>
+                                        <input class="form-control form-control-sm" @bind="Materiale.Fornitore" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 4 - NOTE (GRIGIO) -->
+                        <div class="col-md-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-header bg-secondary text-white py-1">
+                                    <h6 class="mb-0 small">📝 Note</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f8f9fa;">
+                                    <textarea class="form-control" rows="3" @bind="Materiale.Note"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER COMPATTO -->
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ChiudiModal">
+                    Annulla
+                </button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="SalvaMateriale">
+                    💾 Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Mostra { get; set; }
+
+    [Parameter]
+    public Materiale Materiale { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnChiudi { get; set; }
+
+    [Parameter]
+    public EventCallback<Materiale> OnSalva { get; set; }
+
+    private async Task ChiudiModal()
+    {
+        await OnChiudi.InvokeAsync();
+    }
+
+    private async Task SalvaMateriale()
+    {
+        await OnSalva.InvokeAsync(Materiale);
+        await ChiudiModal();
+    }
+}

@@ -1,0 +1,58 @@
+/* HEADER PERSONALIZZATO SCHEDA LAVORAZIONE */
+.navbar-brand img {
+    height: 60px;
+}
+
+/* LAYOUT PRINCIPALE */
+.layout-schedalavorazione {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* CARD E BOTTONI - STESSI STILI SEGRETERIA */
+.card {
+    border: 1px solid var(--cnf-blu-chiaro);
+    border-radius: 8px;
+}
+
+.card-header {
+    background-color: var(--cnf-grigio-chiaro);
+    border-bottom: 1px solid var(--cnf-blu-chiaro);
+}
+
+/* BOTTONI - STESSI STILI SEGRETERIA */
+.btn-outline-primary {
+    border-color: var(--cnf-blu-medio);
+    color: var(--cnf-blu-medio);
+}
+
+    .btn-outline-primary:hover {
+        background-color: var(--cnf-blu-medio);
+        border-color: var(--cnf-blu-medio);
+    }
+
+/* SE NECESSARIO, CHAT OVERLAY SPECIFICO PER SCHEDA LAVORAZIONE */
+.chat-overlay-schedalavorazione {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+    background: white;
+    border-left: 3px solid var(--cnf-blu-medio);
+    box-shadow: -5px 0 15px rgba(13, 59, 92, 0.2);
+    z-index: 9999;
+}
+
+/* STILI SPECIFICI PER IL CRUSCOTTO SCHEDA LAVORAZIONE */
+.contenitore-schede-unificato {
+    background: white;
+    border-radius: 8px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .layout-schedalavorazione {
+        padding: 0.5rem;
+    }
+}

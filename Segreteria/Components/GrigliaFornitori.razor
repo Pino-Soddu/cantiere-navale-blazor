@@ -1,0 +1,195 @@
+﻿@using CNP.Segreteria.Models
+@implements IDisposable
+
+<style>
+    .griglia-scroll-container {
+        width: 100%;
+        height: var(--altezza-griglia, 490px);
+        overflow: auto;
+        border: 1px solid #dee2e6;
+        background: white;
+        display: block;
+    }
+
+    .tabella-fornitori {
+        min-width: 1000px;
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+        .tabella-fornitori thead th {
+            background-color: var(--cnf-blu-scuro);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 12px 8px;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .tabella-fornitori tbody td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .tabella-fornitori tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* HEADER RICERCA - PER TUTTE LE ANAGRAFICHE */
+    .header-ricerca {
+        flex: 1;
+        max-width: 400px;
+        margin-right: 1rem;
+    }
+
+    .card-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .counter-badge {
+        background-color: var(--cnf-blu-medio);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* EVIDENZIAZIONE TEMPORANEA - VERDE MOLTO VIVIDO */
+    .riga-evidenziata {
+        background-color: #c3e6cb !important;
+        border-left: 5px solid #218838;
+        box-shadow: 0 0 12px rgba(33, 136, 56, 0.4);
+        transition: all 0.3s ease-in-out;
+    }
+
+        .riga-evidenziata td {
+            font-weight: 700;
+            color: #0f5132;
+        }
+</style>
+
+<!-- GRIGLIA SEMPLIFICATA - SOLO TABELLA -->
+@if (Fornitori == null || !Fornitori.Any())
+{
+    <div class="alert alert-warning">
+        Nessun fornitore trovato.
+    </div>
+}
+else
+{
+    <div class="griglia-scroll-container" style="--altezza-griglia: @AltezzaGriglia;">
+        <table class="tabella-fornitori table-striped">
+            <thead>
+                <tr>
+                    <th>Azioni</th>
+                    <th>ID</th>
+                    <th>Ragione Sociale</th>
+                    <th>Indirizzo</th>
+                    <th>Telefono</th>
+                    <th>Email</th>
+                    <th>Partita IVA</th>
+                    <th>Codice SDI</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var fornitore in Fornitori)
+                {
+                    <tr class="@(fornitore == FornitoreEvidenziato ? "riga-evidenziata" : "")">
+                        <!-- COLONNA AZIONI COME PRIMA CELLA -->
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" @onclick="() => OnModificaFornitore.InvokeAsync(fornitore)">
+                                    ✏️
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => OnEliminaFornitore.InvokeAsync(fornitore)">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+
+                        <!-- DATI FORNITORE -->
+                        <td><strong>@fornitore.FornitoreID</strong></td>
+                        <td>@fornitore.RagioneSociale</td>
+                        <td>@fornitore.Indirizzo</td>
+                        <td>@fornitore.Telefono</td>
+                        <td>@fornitore.Email</td>
+                        <td>@fornitore.PartitaIVA</td>
+                        <td>@fornitore.CodiceSDI</td>
+                        <td>@fornitore.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public List<Fornitore>? Fornitori { get; set; }
+
+    [Parameter]
+    public EventCallback<Fornitore> OnModificaFornitore { get; set; }
+
+    [Parameter]
+    public EventCallback<Fornitore> OnEliminaFornitore { get; set; }
+
+    [Parameter]
+    public string AltezzaGriglia { get; set; } = "490px";
+
+    [Parameter]
+    public Fornitore? FornitoreEvidenziato { get; set; }
+
+    private string testoRicerca = string.Empty;
+    private List<Fornitore> fornitoriFiltrati = new();
+
+    protected override void OnParametersSet()
+    {
+        FiltraFornitori();
+    }
+
+    private void FiltraFornitori()
+    {
+        if (Fornitori == null)
+        {
+            fornitoriFiltrati = new List<Fornitore>();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(testoRicerca))
+        {
+            fornitoriFiltrati = Fornitori;
+            return;
+        }
+
+        var termine = testoRicerca.Trim().ToLower();
+        fornitoriFiltrati = Fornitori.Where(f =>
+            (f.RagioneSociale?.ToLower().Contains(termine) == true) ||
+            (f.Indirizzo?.ToLower().Contains(termine) == true) ||
+            (f.Telefono?.Contains(termine) == true) ||
+            (f.Email?.ToLower().Contains(termine) == true) ||
+            (f.PartitaIVA?.Contains(termine) == true)
+        ).ToList();
+    }
+
+    public void Dispose()
+    {
+        // Cleanup se necessario
+    }
+}

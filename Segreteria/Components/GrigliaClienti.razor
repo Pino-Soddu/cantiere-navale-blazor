@@ -1,0 +1,231 @@
+﻿@using CNP.Segreteria.Models
+@implements IDisposable
+
+<style>
+    .griglia-scroll-container {
+        width: 100%;
+        height: var(--altezza-griglia, 490px);
+        overflow: auto;
+        border: 1px solid #dee2e6;
+        background: white;
+        display: block;
+    }
+
+    .tabella-clienti {
+        min-width: 2000px;
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+        .tabella-clienti thead th {
+            background-color: var(--cnf-blu-scuro);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 12px 8px;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .tabella-clienti tbody td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .tabella-clienti tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* BARRA RICERCA IN HEADER */
+    .header-ricerca {
+        flex: 1;
+        max-width: 400px;
+        margin-right: 1rem;
+    }
+
+    .card-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .counter-badge {
+        background-color: var(--cnf-blu-medio);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* EVIDENZIAZIONE TEMPORANEA - VERDE MOLTO VIVIDO */
+    .riga-evidenziata {
+        background-color: #c3e6cb !important;
+        border-left: 5px solid #218838;
+        box-shadow: 0 0 12px rgba(33, 136, 56, 0.4);
+        transition: all 0.3s ease-in-out;
+    }
+
+        .riga-evidenziata td {
+            font-weight: 700;
+            color: #0f5132;
+        }
+</style>
+
+<!-- GRIGLIA FILTRATA -->
+@if (Clienti == null || !Clienti.Any())
+{
+    <div class="alert alert-warning">
+        Nessun cliente trovato nel database.
+    </div>
+}
+else if (clientiFiltrati.Count == 0 && !string.IsNullOrEmpty(testoRicerca))
+{
+    <div class="alert alert-info">
+        Nessun cliente trovato per "<strong>@testoRicerca</strong>"
+    </div>
+}
+else
+{
+    <div class="griglia-scroll-container" style="--altezza-griglia: @AltezzaGriglia;">
+        <table class="tabella-clienti table-striped">
+            <thead>
+                <tr>
+                    <th>Azioni</th>
+                    <th>Codice</th>
+                    <th>Ragione Sociale</th>
+                    <th>Tipo</th>
+                    <th>Contatto</th>
+                    <th>Ruolo</th>
+                    <th>Indirizzo</th>
+                    <th>Comune</th>
+                    <th>CAP</th>
+                    <th>Provincia</th>
+                    <th>Telefono</th>
+                    <th>Email</th>
+                    <th>Partita IVA</th>
+                    <th>Codice Fiscale</th>
+                    <th>IBAN</th>
+                    <th>Banca</th>
+                    <th>Servizi</th>
+                    <th>Porto</th>
+                    <th>Pagamento</th>
+                    <th>Primo Contatto</th>
+                    <th>Valutazione</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cliente in clientiFiltrati)
+                {
+                    <tr class="@(cliente == ClienteEvidenziato ? "riga-evidenziata" : "")">
+                        <!-- COLONNA AZIONI COME PRIMA CELLA -->
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" @onclick="() => OnModificaCliente.InvokeAsync(cliente)">
+                                    ✏️
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => OnEliminaCliente.InvokeAsync(cliente)">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+
+                        <!-- DATI CLIENTE -->
+                        <td><strong>@cliente.CodiceCliente</strong></td>
+                        <td>@cliente.RagioneSociale</td>
+                        <td>@cliente.TipoCliente</td>
+                        <td>@cliente.NomeContatto</td>
+                        <td>@cliente.RuoloContatto</td>
+                        <td>@cliente.Indirizzo</td>
+                        <td>@cliente.Comune</td>
+                        <td>@cliente.CAP</td>
+                        <td>@cliente.SiglaProvincia</td>
+                        <td>@cliente.Telefono</td>
+                        <td>@cliente.Email</td>
+                        <td>@cliente.PartitaIVA</td>
+                        <td>@cliente.CodiceFiscale</td>
+                        <td>@cliente.IBAN</td>
+                        <td>@cliente.BancaRiferimento</td>
+                        <td>@cliente.TipologiaServizi</td>
+                        <td>@cliente.PortoRiferimento</td>
+                        <td>@cliente.TerminiPagamento</td>
+                        <td>@cliente.DataPrimoContatto?.ToString("dd/MM/yyyy")</td>
+                        <td>@cliente.ValutazioneCliente</td>
+                        <td>@cliente.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<Cliente>? Clienti { get; set; }
+
+    [Parameter]
+    public EventCallback<Cliente> OnModificaCliente { get; set; }
+
+    [Parameter]
+    public EventCallback<Cliente> OnEliminaCliente { get; set; }
+
+    [Parameter]
+    public EventCallback OnNuovoCliente { get; set; }
+
+    [Parameter]
+    public string AltezzaGriglia { get; set; } = "490px";
+
+    [Parameter]
+    public Cliente? ClienteEvidenziato { get; set; }
+
+    private string testoRicerca = string.Empty;
+    private List<Cliente> clientiFiltrati = new();
+
+    protected override void OnParametersSet()
+    {
+        FiltraClienti();
+    }
+
+    private void FiltraClienti()
+    {
+        if (Clienti == null)
+        {
+            clientiFiltrati = new List<Cliente>();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(testoRicerca))
+        {
+            clientiFiltrati = Clienti;
+            return;
+        }
+
+        var termine = testoRicerca.Trim().ToLower();
+        clientiFiltrati = Clienti.Where(c =>
+            (c.RagioneSociale?.ToLower().Contains(termine) == true) ||
+            (c.NomeContatto?.ToLower().Contains(termine) == true) ||
+            (c.Telefono?.Contains(termine) == true) ||
+            (c.Email?.ToLower().Contains(termine) == true) ||
+            (c.Comune?.ToLower().Contains(termine) == true) ||
+            (c.Indirizzo?.ToLower().Contains(termine) == true) ||
+            (c.TipoCliente?.ToLower().Contains(termine) == true)
+        ).ToList();
+    }
+
+    public void Dispose()
+    {
+        // Cleanup se necessario
+    }
+}

@@ -1,0 +1,1707 @@
+﻿@page "/amministrazione/nuovo-preventivo"
+
+//<link href="css/Amministrazione/NuovoPreventivo.css" rel="stylesheet" />
+<link href="css/Amministrazione/NuovoPreventivo.css?v=1.1" rel="stylesheet" />
+
+@using CNP.Segreteria.Models
+@using CNP.SchedaLavorazione.Models
+@using CNP.Amministrazione.Models
+@using CNP.Amministrazione.Services
+@using System.Globalization;
+@using Microsoft.Data.SqlClient;
+@using System.Data;
+@inject NavigationManager Navigation
+@inject PreventiviService PreventiviService
+@inject ModelliPreventiviService ModelliPreventiviService
+@inject ClientiService ClientiService
+@inject ImbarcazioniService ImbarcazioniService
+@inject AttivitaService AttivitaService
+@inject SubAttivitaService SubAttivitaService
+@inject CalcoloService CalcoloService
+@inject MaterialiService MaterialiService
+@inject UnitaMisuraService UnitaMisuraService
+@inject DettaglioPreventiviService DettaglioPreventiviService
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Cantiere Navale - Nuovo Preventivo</PageTitle>
+
+<div class="page-container-compact">
+    <!-- HEADER COMPATTO -->
+    <div class="page-header-compact">
+        <div class="header-content-compact">
+            <h1 class="titolo-principale">Nuovo Preventivo</h1>
+        </div>
+    </div>
+
+    <!-- SEZIONI A 3 COLONNE -->
+    <div class="sezioni-compact">
+        <!-- DATI GENERALI -->
+        <div class="sezione-dati-generali">
+            <h3>📋 Dati Generali</h3>
+            <div class="form-grid-compact-migliorato">
+                <!-- RIGA 1: NUMERO -->
+                <div class="form-riga-compact">
+                    <div class="form-group-compact label-allineato">
+                        <label>Numero</label>
+                        <input @bind="preventivo.PreventivoId" type="text" class="input-compact" disabled />
+                    </div>
+                </div>
+
+                <!-- RIGA 2: DATE -->
+                <div class="form-riga-compact">
+                    <div class="form-group-compact label-allineato">
+                        <label>Data Emissione</label>
+                        <input @bind="preventivo.DataCreazione" type="date" class="input-compact" @bind:format="yyyy-MM-dd" />
+                    </div>
+                    <div class="spaziatura-verticale"></div>
+                    <div class="form-group-compact label-allineato">
+                        <label>Scadenza</label>
+                        <input @bind="dataScadenza" type="date" class="input-compact" @bind:format="yyyy-MM-dd" />
+                    </div>
+                </div>
+
+                <!-- RIGA 3: DESCRIZIONE -->
+                <div class="form-riga-compact">
+                    <div class="form-group-compact label-allineato textarea-container">
+                        <label>Titolo/Descrizione</label>
+                        <textarea @bind="preventivo.Descrizione" class="textarea-compact-migliorata" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENTE -->
+        <div class="sezione-cliente">
+            <h3>👤 Cliente</h3>
+            <div class="combo-compact-container">
+                <select @onchange="OnClienteSelezionato" class="combo-compact">
+                    <option value="0">-- Seleziona Cliente --</option>
+                    @foreach (var cliente in clienti)
+                    {
+                        <option value="@cliente.ClienteID">@cliente.RagioneSociale</option>
+                    }
+                </select>
+                <button class="btn-icon" @onclick="ApriModalCliente" title="Nuovo Cliente">➕</button>
+            </div>
+            @if (clienteSelezionato != null)
+            {
+                <div class="dettagli-compact-completo">
+                    <div class="riga-dettaglio">@clienteSelezionato.RagioneSociale</div>
+                    <div class="riga-dettaglio">📍 @clienteSelezionato.Indirizzo, @clienteSelezionato.CAP @clienteSelezionato.Comune (@clienteSelezionato.SiglaProvincia)</div>
+                    <div class="riga-dettaglio">📞 @clienteSelezionato.Telefono</div>
+                    <div class="riga-dettaglio">📧 @clienteSelezionato.Email</div>
+                    @if (!string.IsNullOrEmpty(clienteSelezionato.PartitaIVA))
+                    {
+                        <div class="riga-dettaglio">🏢 P.IVA: @clienteSelezionato.PartitaIVA</div>
+                    }
+                    @if (!string.IsNullOrEmpty(clienteSelezionato.CodiceFiscale))
+                    {
+                        <div class="riga-dettaglio">👤 CF: @clienteSelezionato.CodiceFiscale</div>
+                    }
+                    <div class="riga-dettaglio">👨‍💼 Nome contatto: DA DEFINIRE</div>
+                    <div class="riga-dettaglio">🎯 Ruolo contatto: DA DEFINIRE</div>
+                </div>
+            }
+        </div>
+
+        <!-- IMBARCAZIONE -->
+        <div class="sezione-imbarcazione">
+            <h3>🚤 Imbarcazione</h3>
+
+            @if (clienteSelezionatoId == 0)
+            {
+                <div class="alert-compact alert-info">
+                    ⚠️ Seleziona prima un cliente
+                </div>
+                <button class="btn-icon" disabled title="Seleziona prima un cliente">➕</button>
+            }
+            else
+            {
+                <div class="combo-compact-container">
+                    <select @bind="imbarcazioneSelezionataId" @bind:event="onchange" class="combo-compact">
+                        <option value="0">-- Seleziona Barca --</option>
+                        @if (caricamentoBarcheInCorso)
+                        {
+                            <option value="0" disabled>Caricamento barche...</option>
+                        }
+                        else
+                        {
+                            @foreach (var barca in imbarcazioniFiltrate)
+                            {
+                                <option value="@barca.ID_Imbarcazione">@barca.Nome_Imbarcazione</option>
+                            }
+                        }
+                    </select>
+                    <button class="btn-icon" @onclick="ApriModalBarca" title="Nuova Barca">➕</button>
+                </div>
+
+                @if (imbarcazioneSelezionata != null)
+                {
+                    <div class="dettagli-compact-completo">
+                        <div class="riga-dettaglio">@imbarcazioneSelezionata.Nome_Imbarcazione</div>
+                        <div class="riga-dettaglio">⛵ @imbarcazioneSelezionata.Nome_Tipo - @imbarcazioneSelezionata.Lunghezza m</div>
+                        <div class="riga-dettaglio">📏 Larghezza: DA DEFINIRE</div>
+                        <div class="riga-dettaglio">📅 Anno Costruzione: DA DEFINIRE</div>
+                        <div class="riga-dettaglio">🔍 Condizione: Da valutare</div>
+                        <div class="riga-dettaglio">🏁 Porto: @imbarcazioneSelezionata.PortoAttracco</div>
+                        <div class="riga-dettaglio">📍 Cantiere: DA DEFINIRE</div>
+                        <div class="riga-dettaglio">🔧 Modello: DA DEFINIRE</div>
+                    </div>
+                }
+
+                else if (!caricamentoBarcheInCorso && !imbarcazioniFiltrate.Any())
+                {
+                    <div class="alert-compact alert-warning">
+                        📝 Nessuna barca per questo cliente
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- CORPO PREVENTIVO -->
+    <div class="sezione-corpo">
+        <div class="header-corpo-preventivo">
+            <h3>🔧 Corpo Preventivo</h3>
+            <div class="controllo-modelli-destro">
+                <span>📁 Modello:</span>
+                <select @bind="modelloSelezionatoTitolo" class="combo-compact combo-modelli"
+                        disabled="@(clienteSelezionatoId == 0 || imbarcazioneSelezionataId == 0)">
+                    <option value="">-- Seleziona --</option>
+                    @foreach (var modello in modelli)
+                    {
+                        <option value="@modello.TitoloPreventivo">@modello.TitoloPreventivo</option>
+                    }
+                </select>
+                <button class="btn btn-outline btn-small" @onclick="ApplicaModello"
+                        disabled="@(clienteSelezionatoId == 0 || imbarcazioneSelezionataId == 0 || string.IsNullOrEmpty(modelloSelezionatoTitolo))">
+                    Applica
+                </button>
+            </div>
+        </div>
+
+        <div class="griglia-compact">
+            <table class="table table-bordered table-compact">
+                <thead>
+                    <tr>
+                        <th width="80">Azioni</th>
+                        <th width="50">#</th>
+                        <th width="180" style="min-width: 160px;">ATTIVITÀ</th>
+                        <th width="180" style="min-width: 150px;">VOCE</th>
+                        <th width="70">N.<br>OPERAI</th>
+                        <th width="120">U.M.<br>VOCE</th>
+                        <th width="70">Q.TA'<br>UM</th>
+                        <th width="80">IMPORTO<br>VOCE</th>
+                        <th width="200">CODICE MATERIALE</th>
+                        <th width="120">U.M.<br>MAT</th>
+                        <th width="70">Q.TA'<br>UM</th>
+                        <th width="70">COSTO<br>MATERIALE</th>
+                        <th width="70">IMPORTO<br>MATER.</th>
+                        <th width="80">TOTALE VOCE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!vociPreventivo.Any())
+                    {
+                        <tr>
+                            <td colspan="14" class="text-center text-muted">
+                                Nessuna voce inserita. Seleziona un modello o aggiungi voci manualmente.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var (voce, index) in vociPreventivo.Select((v, i) => (v, i)))
+                        {
+                            var isInEditing = voce.Id == idRigaInEditing;
+                            <tr class="@(index % 2 == 0 ? "tr-even" : "tr-odd") @(isInEditing ? "riga-editing" : "") tr-hover">
+                                <!-- AZIONI IN PRIMA COLONNA -->
+                                <td>
+                                    <div class="btn-group-azioni">
+                                        @if (StatoRigaCorrente(voce) == StatoRiga.Editing)
+                                        {
+                                            <button class="btn-icon" @onclick="() => ConfermaModifiche(voce)" title="Conferma">✅</button>
+                                            <button class="btn-icon" @onclick="() => AnnullaModifiche(voce)" title="Annulla">❌</button>
+                                        }
+                                        else if (StatoRigaCorrente(voce) == StatoRiga.Visualizzazione)
+                                        {
+                                            <button class="btn-icon" @onclick="() => AttivaEditing(voce)" title="Modifica">✏️</button>
+                                            <button class="btn-icon" @onclick="() => EliminaVoce(voce)" title="Elimina">🗑️</button>
+                                            <button class="btn-icon" @onclick="() => AggiungiVoceAttivita(voce)" title="Aggiungi voce">➕</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn-icon" @onclick="() => EliminaVoce(voce)" title="Elimina">🗑️</button>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td>@(voce.Id > 0 ? voce.Id.ToString() : "new")</td>
+
+                                <!-- COLONNA ATTIVITÀ -->
+                                <td class="td-attivita">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Vuota)
+                                    {
+                                        <select @onchange="(e) => OnAttivitaSelezionata(e, voce)" class="combo-inline">
+                                            <option value="">-- Seleziona Attività --</option>
+                                            @foreach (var attivita in listaAttivita)
+                                            {
+                                                <option value="@attivita.NomeAttivita">@attivita.NomeAttivita</option>
+                                            }
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        @voce.DescrizioneAttivita
+                                    }
+                                </td>
+
+                                <!-- COLONNA VOCE -->
+                                <td class="td-attivita">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.AttivitaSelezionata)
+                                    {
+                                        <select @onchange="(e) => OnVoceSelezionata(e, voce)" class="combo-inline">
+                                            <option value="">-- Seleziona Voce --</option>
+                                            @foreach (var subAttivita in subAttivitaPerCombo)
+                                            {
+                                                var isDuplicato = IsVoceGiaPresente(voce.DescrizioneAttivita, subAttivita.Voce);
+                                                @if (isDuplicato)
+                                                {
+                                                    <option value="" disabled class="option-duplicato">
+                                                        @subAttivita.Voce 🔴
+                                                    </option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@subAttivita.ID" class="option-disponibile">
+                                                        @subAttivita.Voce
+                                                    </option>
+                                                }
+                                            }
+                                        </select>
+                                    }
+                                    else if (StatoRigaCorrente(voce) == StatoRiga.Vuota)
+                                    {
+                                        <span class="text-muted small">Seleziona attività</span>
+                                    }
+                                    else
+                                    {
+                                        @voce.DescrizioneVoce
+                                    }
+                                </td>
+
+                                <!-- N. OPERAI -->
+                                <td class="td-attivita text-center">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("N_Operatori"))
+                                    {
+                                        <input value="@voce.N_Operatori"
+                                               @oninput="@((e) => OnCampoModificato(e, voce, "N_Operatori"))"
+                                               class="campo-editabile" />
+                                    }
+                                    else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                    {
+                                        @voce.N_Operatori
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <!-- U.M. VOCE -->
+                                <td class="td-attivita text-center">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("UnitaMisura"))
+                                    {
+                                        <select value="@voce.UnitaMisura"
+                                                @onchange="@((e) => OnCampoModificato(e, voce, "UnitaMisura"))"
+                                                class="campo-editabile combo-unita-misura">
+                                            <option value="">-- Seleziona U.M. --</option>
+                                            @foreach (var um in unitaMisuraAttivita)
+                                            {
+                                                <option value="@um.UM">@um.UM - @um.Descrizione</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                    {
+                                        @voce.UnitaMisura
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <!-- Q.TA' UM ATTIVITÀ -->
+                                <td class="td-attivita text-end">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("Qta_Voce"))
+                                    {
+                                        <input value="@voce.Qta_Voce"
+                                               @oninput="@((e) => OnCampoModificato(e, voce, "Qta_Voce"))"
+                                               class="campo-editabile" />
+                                    }
+                                    else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                    {
+                                        @voce.Qta_Voce.ToString("N1")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <!-- IMPORTO VOCE (calcolato, sola lettura) -->
+                                <td class="td-attivita text-end">@voce.ImportoVoce.ToString("N1") €</td>
+
+                                <!-- CODICE MATERIALE -->
+                                <td class="td-materiali">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("CodiceMateriale"))
+                                    {
+                                        <select @onchange="@((e) => OnCampoModificato(e, voce, "CodiceMateriale"))"
+                                                class="campo-editabile">
+                                            <option value="">-- Seleziona Materiale --</option>
+                                            @foreach (var materiale in materialiCombo)
+                                            {
+                                                <option value="@materiale.CodiceMateriale" selected="@(voce.CodiceMateriale == materiale.CodiceMateriale)">
+                                                    @materiale.CodiceMateriale
+                                                </option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                    {
+                                        @voce.CodiceMateriale
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <!-- U.M. MAT -->
+                                <td class="td-materiali text-center">
+                                    @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("UM_Mat"))
+                                    {
+                                        <select value="@voce.UM_Mat"
+                                                @onchange="@((e) => OnCampoModificato(e, voce, "UM_Mat"))"
+                                                class="campo-editabile combo-unita-misura">
+                                            <option value="">-- Seleziona U.M. --</option>
+                                            @foreach (var um in unitaMisuraMateriali)
+                                            {
+                                                <option value="@um.UM">@um.UM - @um.Descrizione</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                    {
+                                        @voce.UM_Mat
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                                <!-- Q.TA' UM MATERIALE -->
+                                <td class="td-materiali text-end">
+                                    @if (!string.IsNullOrEmpty(voce.CodiceMateriale))
+                                    {
+                                        @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("Qta_Mat"))
+                                        {
+                                            <input value="@voce.Qta_Mat"
+                                                   @oninput="@((e) => OnCampoModificato(e, voce, "Qta_Mat"))"
+                                                   class="campo-editabile" />
+                                        }
+                                        else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                        {
+                                            @FormattaNumero(voce.Qta_Mat)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    }
+                                </td>
+
+                                <!-- COSTO MATER. -->
+                                <td class="td-materiali text-end">
+                                    @if (!string.IsNullOrEmpty(voce.CodiceMateriale))
+                                    {
+                                        @if (StatoRigaCorrente(voce) == StatoRiga.Editing && campiEditabili.Contains("Costo_Mat"))
+                                        {
+                                            <input value="@voce.Costo_Mat"
+                                                   @oninput="@((e) => OnCampoModificato(e, voce, "Costo_Mat"))"
+                                                   class="campo-editabile" />
+                                        }
+                                        else if (StatoRigaCorrente(voce) >= StatoRiga.Visualizzazione)
+                                        {
+                                            @FormattaNumero(voce.Costo_Mat)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    }
+                                </td>
+
+                                <!-- IMPORTO MATER. -->
+                                <td class="td-materiali text-end">
+                                    @if (!string.IsNullOrEmpty(voce.CodiceMateriale))
+                                    {
+                                        @FormattaDecimal((decimal)voce.ImportoMateriale)
+                                    }
+                                </td>
+ 
+                                <!-- TOTALE VOCE (calcolato, sola lettura) -->
+                                <td class="td-totale text-end fw-bold">@voce.TotaleVoce.ToString("N2") €</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="azioni-griglia-compact">
+            @if (clienteSelezionatoId == 0 || imbarcazioneSelezionataId == 0)
+            {
+                <div class="avviso-dati-mancanti">
+                    ⚠️ Seleziona prima Cliente e Barca per aggiungere voci
+                </div>
+            }
+            
+            <button class="btn btn-success btn-small" @onclick="AggiungiNuovaVoceVuota"
+                    disabled="@(clienteSelezionatoId == 0 || imbarcazioneSelezionataId == 0)">
+                ➕ Aggiungi Voce
+            </button>
+        </div>
+    </div>
+
+    <!-- TOTALI -->
+    <div class="sezione-totali">
+        <h3>💰 Totali</h3>
+        <div class="totali-compact">
+            <div class="totale-riga-compact">
+                <span>Totale Attività:</span>
+                <span>€ @totaleAttivita.ToString("N2")</span>
+            </div>
+            <div class="totale-riga-compact">
+                <span>Totale Materiali:</span>
+                <span>€ @totaleMateriali.ToString("N2")</span>
+            </div>
+            <div class="totale-riga-compact imponibile-compact">
+                <span>Imponibile:</span>
+                <span>€ @imponibile.ToString("N2")</span>
+            </div>
+            <div class="totale-riga-compact">
+                <span>IVA 22%:</span>
+                <span>€ @iva.ToString("N2")</span>
+            </div>
+            <div class="totale-riga-compact totale-finale-compact">
+                <strong>TOTALE:</strong>
+                <strong>€ @totalePreventivo.ToString("N2")</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUOVO CLIENTE -->
+    <ModalNuovoCliente @bind-Visibile="modalClienteAperto"
+                       OnClienteSalvato="HandleClienteSalvato" />
+
+    <ModalNuovaBarca @bind-Visibile="modalBarcaAperta"
+                     OnBarcaSalvata="HandleBarcaSalvata"
+                     ClienteSelezionatoId="@clienteSelezionatoId"
+                     NomeClienteSelezionato="@(clienteSelezionato?.RagioneSociale ?? "")" />
+
+    <!-- FOOTER AZIONI -->
+    <div class="page-footer-compact">
+        <div class="footer-actions">
+            <button class="btn btn-secondary" @onclick="Annulla">❌ Annulla</button>
+            <button class="btn btn-outline-primary" @onclick="SalvaComeModello"
+                    disabled="@(!vociPreventivo.Any())">
+                📁 Salva come Modello
+            </button>
+            <button class="btn btn-success" @onclick="RegistraPreventivo">✅ Salva Preventivo</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- OVERLAY MESSAGGI DI STATO -->
+@if (mostraErrore || mostraSuccesso)
+{
+    <div class="overlay-messaggi">
+        <div class="messaggio-centrale @((mostraErrore ? "messaggio-errore" : "messaggio-successo"))">
+            <div class="messaggio-icona">
+                @if (mostraErrore)
+                {
+                    <span>❌</span>
+                }
+                @if (mostraSuccesso)
+                {
+                    <span>✅</span>
+                }
+            </div>
+            <div class="messaggio-testo">
+                <h4>@(mostraErrore ? "Errore" : "Successo")</h4>
+                <p>@(mostraErrore? messaggioErrore : messaggioSuccesso)</p>
+            </div>
+            <button class="btn-close-overlay" @onclick="NascondiMessaggi">✕</button>
+        </div>
+    </div>
+}
+
+
+<style>
+    .table-compact thead th {
+        background-color: #2c3e50 !important;
+        color: white !important;
+    }
+</style>
+
+@code {
+
+    //
+    // VARIABILI
+    //
+    #region PARAMETRI E INIEZIONI
+    [Parameter]
+    public int PreventivoId { get; set; }
+    private string _connectionString => Configuration.GetConnectionString("DefaultConnection") ?? "";
+    #endregion
+
+    #region VARIABILI E STATO COMPONENTE
+    // Modelli dati
+    private Preventivo preventivo = new();
+    private List<Cliente> clienti = new();
+    private List<Imbarcazione> imbarcazioni = new();
+    private List<DettaglioPreventivo> vociPreventivo = new();
+    private List<ModelloPreventivo> modelli = new();
+    private List<Imbarcazione> imbarcazioniFiltrate = new();
+    
+    // Liste per combo
+    private List<Attività> listaAttivita = new();
+    private List<SubAttività> subAttivitaPerCombo = new();
+    private List<Materiale> materialiCombo = new();
+    private List<UnitaMisura> unitaMisuraAttivita = new();
+    private List<UnitaMisura> unitaMisuraMateriali = new();
+    
+    // Selezione utente
+    private int clienteSelezionatoId = 0;
+    private int imbarcazioneSelezionataId = 0;
+    private string modelloSelezionatoTitolo = string.Empty;
+    private int? idRigaInEditing;
+    
+    // Calcoli e totali
+    private decimal totaleAttivita = 0;
+    private decimal totaleMateriali = 0;
+    private decimal imponibile = 0;
+    private decimal iva = 0;
+    private decimal totalePreventivo = 0;
+    private DateTime dataScadenza;
+    
+    // Stato UI
+    private bool modalClienteAperto = false;
+    private bool modalBarcaAperta = false;
+    private bool caricamentoBarcheInCorso = false;
+    private List<string> campiEditabili = new();
+
+    // Messaggi di errore
+    private string messaggioErrore = "";
+    private string messaggioSuccesso = "";
+    private bool mostraErrore = false;
+    private bool mostraSuccesso = false;
+    
+    // Enumerazioni
+    private enum StatoRiga { Vuota, AttivitaSelezionata, Visualizzazione, Editing }
+    #endregion
+
+    #region PROPRIETÀ CALCOLATE
+    private Cliente? clienteSelezionato => clienti.FirstOrDefault(c => c.ClienteID == clienteSelezionatoId);
+    private Imbarcazione? imbarcazioneSelezionata => imbarcazioniFiltrate.FirstOrDefault(i => i.ID_Imbarcazione == imbarcazioneSelezionataId);
+    #endregion
+
+    //
+    // METODI
+    //
+    #region METODI LIFECYCLE  (Ciclo di Vita)
+    protected override async Task OnInitializedAsync()
+    {
+        //Console.WriteLine("🚀 Inizializzazione componente NuovoPreventivo...");
+
+        await InizializzaPreventivo();
+        await CaricaDatiIniziali();
+        await CaricaConfigurazioneEditing();
+        await CaricaMaterialiPerCombo();
+        await CaricaUnitaMisura();
+
+        //Console.WriteLine("🏁 Componente NuovoPreventivo inizializzato");
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (PreventivoId > 0)
+        {
+            preventivo.PreventivoId = PreventivoId;
+            //Console.WriteLine($"📝 PreventivoId impostato da parametro: {PreventivoId}");
+        }
+        await base.OnParametersSetAsync();
+    }
+    #endregion
+
+    #region INIZIALIZZAZIONE E CARICAMENTO DATI
+    private async Task InizializzaPreventivo()
+    {
+        preventivo.DataCreazione = DateTime.Today;
+        dataScadenza = DateTime.Today.AddDays(30);
+        preventivo.Stato = "BOZZA";
+
+        if (preventivo.PreventivoId == 0)
+        {
+            preventivo.PreventivoId = await Task.Run(() => PreventiviService.GetProssimoPreventivoId());
+        }
+    }
+    private async Task CaricaDatiIniziali()
+    {
+        try
+        {
+            //Console.WriteLine("🔄 Inizio caricamento dati iniziali...");
+
+            // CARICA CLIENTI REALI DAL DATABASE
+            clienti = await ClientiService.GetClientiPerPreventivo();
+            //Console.WriteLine($"✅ Caricati {clienti.Count} clienti dal database");
+
+            // CARICA MODELLI REALI DAL DATABASE
+            modelli = await ModelliPreventiviService.GetModelliPreventivo();
+            //Console.WriteLine($"✅ Caricati {modelli.Count} modelli preventivo dal database");
+
+            // INIZIALIZZA IMBARCAZIONI VUOTE (SI CARICHERANNO QUANDO SI SELEZIONA CLIENTE)
+            imbarcazioniFiltrate = new List<Imbarcazione>();
+            //Console.WriteLine("✅ Liste imbarcazioni inizializzate");
+
+            // INIZIALIZZA VOCI PREVENTIVO VUOTE
+            vociPreventivo = new List<DettaglioPreventivo>();
+            //Console.WriteLine("✅ Liste voci preventivo inizializzate");
+
+            // RESETTA SELEZIONI
+            clienteSelezionatoId = 0;
+            imbarcazioneSelezionataId = 0;
+            modelloSelezionatoTitolo = string.Empty;
+
+            //Console.WriteLine("✅ Selezione reset completata");
+
+            // RICALCOLA TOTALI (SARANNO ZERO)
+            RicalcolaTotali();
+            //Console.WriteLine("✅ Totali ricalcolati");
+
+            //Console.WriteLine("🎉 Caricamento dati iniziali completato con successo");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ ERRORE CRITICO nel caricamento dati iniziali: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+
+            // INIZIALIZZA LISTE VUOTE INVECE DI DATI MOCK
+            clienti = new List<Cliente>();
+            modelli = new List<ModelloPreventivo>();
+            imbarcazioniFiltrate = new List<Imbarcazione>();
+            vociPreventivo = new List<DettaglioPreventivo>();
+
+            // RESETTA SELEZIONI
+            clienteSelezionatoId = 0;
+            imbarcazioneSelezionataId = 0;
+            modelloSelezionatoTitolo = string.Empty;
+
+            // TODO: IMPLEMENTARE MESSAGGIO ERRORE VISIVO PER L'UTENTE
+            // Esempio: _alertService.ShowError("Impossibile caricare i dati. Riprovare più tardi.");
+
+            Console.WriteLine("⚠️  Sistema inizializzato con liste vuote a causa dell'errore");
+        }
+        finally
+        {
+            // FORZA AGGIORNAMENTO UI
+            StateHasChanged();
+            //Console.WriteLine("🔄 UI aggiornata");
+        }
+    }
+    private async Task CaricaConfigurazioneEditing()
+    {
+        try
+        {
+            // CARICA LA CONFIGURAZIONE DEI CAMPI EDITABILI
+            var configurazione = await Task.Run(() =>
+                Configuration.GetSection("CampiEditabiliPreventivo").Get<List<string>>()
+            );
+
+            campiEditabili = configurazione ?? new List<string>
+            {
+                "Qta_Voce",
+                "Qta_Mat",
+                "Costo_Mat"
+            };
+
+            //Console.WriteLine($"✅ Configurazione editing caricata: {campiEditabili.Count} campi");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore caricamento configurazione editing: {ex.Message}");
+            campiEditabili = new List<string> { "Qta_Voce", "Qta_Mat", "Costo_Mat" };
+        }
+    }
+    private async Task CaricaMaterialiPerCombo()
+    {
+        try
+        {
+            materialiCombo = await MaterialiService.GetMaterialiPerCombo();
+            //Console.WriteLine($"✅ Caricati {materialiCombo.Count} materiali per combo");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore caricamento materiali: {ex.Message}");
+            materialiCombo = new List<Materiale>();
+        }
+    }
+    private async Task CaricaBarcheCliente(int clienteId)
+    {
+        if (clienteId == 0) return;
+
+        caricamentoBarcheInCorso = true;
+        StateHasChanged();
+
+        try
+        {
+            // OTTIENI il CodiceCliente dal ClienteID selezionato
+            var codiceCliente = await ClientiService.GetCodiceClienteById(clienteId);
+
+            if (codiceCliente.HasValue)
+            {
+                // USA CodiceCliente per caricare le barche
+                imbarcazioniFiltrate = await ImbarcazioniService.GetImbarcazioniByCliente(codiceCliente.Value);
+            }
+            else
+            {
+                imbarcazioniFiltrate = new List<Imbarcazione>();
+                MostraErrore($"CodiceCliente non trovato per ClienteID: {clienteId}");
+
+            }
+
+            imbarcazioneSelezionataId = 0; // Resetta selezione barca
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento barche: {ex.Message}");
+            imbarcazioniFiltrate = new List<Imbarcazione>();
+        }
+        finally
+        {
+            caricamentoBarcheInCorso = false;
+            StateHasChanged();
+        }
+    }
+    private async Task CaricaUnitaMisura()
+    {
+        try
+        {
+            unitaMisuraAttivita = await UnitaMisuraService.GetUnitaMisuraAttivita();
+            unitaMisuraMateriali = await UnitaMisuraService.GetUnitaMisuraMateriali();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore caricamento unità di misura: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region GESTIONE SELEZIONI UTENTE
+    
+    // Gestione click sul combo Clienti per estrarre le sue barche
+    private async Task OnClienteSelezionato(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int nuovoClienteId))
+        {
+            clienteSelezionatoId = nuovoClienteId;
+            await CaricaBarcheCliente(nuovoClienteId);
+            StateHasChanged();
+        }
+    }
+    
+    // Gestione click sul combo barche per visualizzare i dati della barca selezionate
+    private void imbarcazioneSelezionataId_Changed(int nuovoValore)
+    {
+        imbarcazioneSelezionataId = nuovoValore;
+        StateHasChanged(); // Forza l'aggiornamento dei dettagli
+    }
+
+    private async Task OnAttivitaSelezionata(ChangeEventArgs e, DettaglioPreventivo voce)
+    {
+        var nomeAttivitaSelezionata = e.Value?.ToString();
+        if (string.IsNullOrEmpty(nomeAttivitaSelezionata))
+            return;
+
+        voce.DescrizioneAttivita = nomeAttivitaSelezionata;
+        await CaricaVociPerAttivita(nomeAttivitaSelezionata);
+        StateHasChanged();
+    }
+
+    private async Task OnVoceSelezionata(ChangeEventArgs e, DettaglioPreventivo voce)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int subAttivitaId))
+        {
+            try
+            {
+                var subAttivitaCompleta = await SubAttivitaService.GetSubAttivitaByAttivita(
+                    await TrovaCodiceAttivita(voce.DescrizioneAttivita)
+                );
+
+                var subAttivita = subAttivitaCompleta.FirstOrDefault(s => s.ID == subAttivitaId);
+                if (subAttivita != null)
+                {
+                    // AUTO-POPOLA CON VALORI DEFAULT
+                    voce.DescrizioneVoce = subAttivita.Voce;
+                    voce.N_Operatori = subAttivita.N_Operatori;
+                    voce.UnitaMisura = subAttivita.UnitaMisura;
+                    voce.Qta_Voce = subAttivita.Qta_Voce;
+                    voce.CodiceMateriale = subAttivita.CodiceMateriale;
+
+                    if (string.IsNullOrEmpty(subAttivita.CodiceMateriale))
+                    {
+                        voce.UM_Mat = string.Empty; // Nessun materiale → campo vuoto
+                        voce.Qta_Mat = 0;
+                        voce.Costo_Mat = 0;
+                    }
+                    else
+                    {
+                        voce.UM_Mat = "KG"; // Solo se c'è materiale
+                        voce.Qta_Mat = 0;
+                        voce.Costo_Mat = 0;
+                    }
+
+                    // CARICA AUTOMATICAMENTE I DATI DEL MATERIALE SE PRESENTE
+                    if (!string.IsNullOrEmpty(voce.CodiceMateriale))
+                    {
+                        await CaricaDettagliMateriale(voce, voce.CodiceMateriale);
+                    }
+
+                    // CALCOLA AUTOMATICAMENTE
+                    var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, (float)(imbarcazioneSelezionata?.Lunghezza ?? 0));
+                    voce.ImportoVoce = voceCalcolata.ImportoVoce;
+                    voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+                    voce.TotaleVoce = voceCalcolata.TotaleVoce;
+
+                    // STATO: VISUALIZZAZIONE (NON EDITING)
+                    idRigaInEditing = null;
+                    RicalcolaTotali();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Errore selezione voce: {ex.Message}");
+            }
+        }
+    }
+    private async Task OnMaterialeSelezionato(ChangeEventArgs e, DettaglioPreventivo voce)
+    {
+        var codiceMaterialeSelezionato = e.Value?.ToString();
+        if (string.IsNullOrEmpty(codiceMaterialeSelezionato))
+            return;
+
+        try
+        {
+            var materiale = await MaterialiService.GetMaterialeByCodice(codiceMaterialeSelezionato);
+            if (materiale != null)
+            {
+                voce.UM_Mat = materiale.UnitaMisura ?? "";
+                voce.Costo_Mat = (float)(materiale.PrezzoUnitario ?? 0); 
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore caricamento materiale {codiceMaterialeSelezionato}: {ex.Message}");
+        }
+    }
+    private async Task ApplicaModello()
+    {
+        if (string.IsNullOrEmpty(modelloSelezionatoTitolo))
+        {
+            Console.WriteLine("⚠️  Nessun modello selezionato");
+            return;
+        }
+
+        try
+        {
+            //Console.WriteLine($"🔄 Applicazione modello: {modelloSelezionatoTitolo}");
+
+            // CARICA LE VOCI DEL MODELLO PER TITOLO
+            var vociModello = await ModelliPreventiviService.GetVociModelloByTitolo(modelloSelezionatoTitolo);
+
+            if (!vociModello.Any())
+            {
+                Console.WriteLine("⚠️  Il modello selezionato non contiene voci");
+                return;
+            }
+
+            var nuoveVoci = ModelliPreventiviService.ConvertiModelloInPreventivo(vociModello, 0);
+            vociPreventivo.Clear();
+            vociPreventivo.AddRange(nuoveVoci);
+
+            RicalcolaTotali();
+            StateHasChanged();
+
+            //Console.WriteLine($"🎉 Modello applicato con successo! {vociPreventivo.Count} voci caricate");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ ERRORE: {ex.Message}");
+        }
+    }
+    #endregion
+
+    #region GESTIONE MODAL E FORM
+    private void ApriModalCliente()
+    {
+        modalClienteAperto = true;
+    }    
+    
+    private void ApriModalBarca()
+    {
+        modalBarcaAperta = true;
+    }
+
+    private async Task HandleClienteSalvato(Cliente cliente)
+    {
+        try
+        {
+            // Ricarica lista clienti dal database
+            clienti = await ClientiService.GetClientiPerPreventivo();
+
+            // Seleziona automaticamente il nuovo cliente
+            clienteSelezionatoId = cliente.ClienteID;
+
+            // AGGIUNGI: Carica le barche del cliente appena selezionato
+            await CaricaBarcheCliente(cliente.ClienteID);
+
+            //Console.WriteLine($"Cliente selezionato: {cliente.RagioneSociale} (ID: {cliente.ClienteID})");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore aggiornamento clienti: {ex.Message}");
+        }
+    }
+    private async Task HandleBarcaSalvata(Imbarcazione barca)
+    {
+        try
+        {
+            // Ricarica le barche del cliente corrente
+            await CaricaBarcheCliente(clienteSelezionatoId);
+
+            // Seleziona automaticamente la nuova barca
+            imbarcazioneSelezionataId = barca.ID_Imbarcazione;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore aggiornamento barche: {ex.Message}");
+        }
+    }
+    #endregion
+
+    #region GESTIONE VOCI PREVENTIVO
+    private async Task AggiungiNuovaVoceVuota()
+    {
+        if (clienteSelezionatoId == 0 || imbarcazioneSelezionataId == 0)
+        {
+            MostraErrore("Seleziona prima cliente e barca");
+            return;
+        }
+
+        try
+        {
+            // CARICA LE ATTIVITÀ SE NON ANCORA CARICATE
+            if (!listaAttivita.Any())
+            {
+                listaAttivita = await AttivitaService.GetAttivita();
+            }
+
+            // CREA NUOVA VOCE VUOTA
+            var nuovaVoce = new DettaglioPreventivo
+            {
+                Id = vociPreventivo.Count > 0 ? vociPreventivo.Max(v => v.Id) + 1 : 1,
+                DescrizioneAttivita = "", // VUOTO
+                DescrizioneVoce = "",    // VUOTO
+                N_Operatori = 1,         // VALORE DEFAULT
+                UnitaMisura = "",        // VUOTO
+                Qta_Voce = 0,            // ZERO
+                ImportoVoce = 0,
+                ImportoMateriale = 0,
+                TotaleVoce = 0
+            };
+
+            vociPreventivo.Add(nuovaVoce);
+            idRigaInEditing = nuovaVoce.Id;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore aggiunta voce: {ex.Message}");
+        }
+    }
+
+    // Da controllare Codice
+    private async Task AggiungiVoceAttivita(DettaglioPreventivo voceEsistente)
+    {
+        // 1. TROVA CODICE ATTIVITÀ
+        var codiceAttivita = await TrovaCodiceAttivita(voceEsistente.DescrizioneAttivita);
+        if (codiceAttivita == 0) return;
+
+        // 2. CARICA COMBO (USA STESSA VARIABILE)
+        subAttivitaPerCombo = await SubAttivitaService.CaricaComboVociPerAttivita(codiceAttivita);
+
+        // 3. INSERISCI RIGA (RESTO CODICE INVARIATO)
+        var indice = vociPreventivo.IndexOf(voceEsistente);
+        var nuovaVoce = new DettaglioPreventivo
+        {
+            Id = -1,
+            DescrizioneAttivita = voceEsistente.DescrizioneAttivita
+            // ... altri campi
+        };
+
+        vociPreventivo.Insert(indice + 1, nuovaVoce);
+        idRigaInEditing = nuovaVoce.Id;
+        StateHasChanged();
+    }
+
+    private void EliminaVoce(DettaglioPreventivo voce)
+    {
+        vociPreventivo.Remove(voce);
+        RicalcolaTotali();
+        StateHasChanged();
+    }
+
+    private async Task<int> TrovaCodiceAttivita(string nomeAttivita)
+    {
+        if (!listaAttivita.Any())
+        {
+            listaAttivita = await AttivitaService.GetAttivita();
+        }
+
+        var attivita = listaAttivita.FirstOrDefault(a => a.NomeAttivita == nomeAttivita);
+        return attivita?.CodiceAttivita ?? 0;
+    }
+    private async Task CaricaVociPerAttivita(string nomeAttivita)
+    {
+        try
+        {
+            // CARICA LISTA ATTIVITÀ SE NON ANCORA CARICATA
+            if (!listaAttivita.Any())
+            {
+                listaAttivita = await AttivitaService.GetAttivita();
+            }
+
+            // TROVA CODICE ATTIVITÀ DAL NOME
+            var attivita = listaAttivita.FirstOrDefault(a => a.NomeAttivita == nomeAttivita);
+            if (attivita != null)
+            {
+                subAttivitaPerCombo = await SubAttivitaService.CaricaComboVociPerAttivita(attivita.CodiceAttivita);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento voci: {ex.Message}");
+            subAttivitaPerCombo = new List<SubAttività>();
+        }
+    }
+
+    private bool IsVoceGiaPresente(string nomeAttivita, string nomeVoce)
+    {
+        return vociPreventivo.Any(v =>
+            v.DescrizioneAttivita == nomeAttivita &&
+            v.DescrizioneVoce == nomeVoce &&
+            v.Id != idRigaInEditing // esclude la riga corrente in editing
+        );
+    }
+    #endregion
+
+    #region GESTIONE STATO RIGHE E EDITING
+    private StatoRiga StatoRigaCorrente(DettaglioPreventivo voce)
+    {
+        if (string.IsNullOrEmpty(voce.DescrizioneAttivita))
+            return StatoRiga.Vuota;
+        else if (string.IsNullOrEmpty(voce.DescrizioneVoce))
+            return StatoRiga.AttivitaSelezionata;
+        else if (idRigaInEditing == voce.Id)
+            return StatoRiga.Editing;
+        else
+            return StatoRiga.Visualizzazione;
+    }
+    private void AttivaEditing(DettaglioPreventivo voce)
+    {
+        idRigaInEditing = voce.Id;
+        StateHasChanged();
+    }
+    private async Task ConfermaModifiche(DettaglioPreventivo voce)
+    {
+        // RICALCOLA PRIMA DI CHIUDERE
+        var lunghezzaFloat = (float)(imbarcazioneSelezionata?.Lunghezza ?? 0);
+        var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, lunghezzaFloat);
+
+        voce.ImportoVoce = voceCalcolata.ImportoVoce;
+        voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+        voce.TotaleVoce = voceCalcolata.TotaleVoce;
+
+        idRigaInEditing = null;
+        RicalcolaTotali();
+        StateHasChanged();
+    }
+    private void AnnullaModifiche(DettaglioPreventivo voce)
+    {
+        idRigaInEditing = null;
+        StateHasChanged();
+    }
+    private void AnnullaInserimento(DettaglioPreventivo voce)
+    {
+        vociPreventivo.Remove(voce);
+        idRigaInEditing = null;
+        StateHasChanged();
+    }
+    #endregion
+
+    #region CALCOLI E TOTALI
+    private void RicalcolaTotali()
+    {
+        var (totaleAtt, totaleMat, impon, ivaCalc, totaleGen) =
+            CalcoloService.CalcolaTotalePreventivo(vociPreventivo);
+
+        totaleAttivita = totaleAtt;
+        totaleMateriali = totaleMat;
+        imponibile = impon;
+        iva = ivaCalc;
+        totalePreventivo = totaleGen;
+
+        StateHasChanged();
+    }
+
+    // Per evitare gli zero numerici in griglia
+    private string FormattaNumero(float valore)
+    {
+        return valore == 0 ? "" : valore.ToString("N1"); // NASCONDI ZERI
+    }
+
+    private string FormattaDecimal(decimal valore)
+    {
+        return valore == 0 ? "" : valore.ToString("N2"); // NASCONDI ZERI
+    }
+    #endregion
+
+    #region GESTIONE MODIFICHE IN TEMPO REALE
+
+    private async Task OnCampoModificato(ChangeEventArgs e, DettaglioPreventivo voce, string tipoCampo)
+    {
+        var valore = e.Value?.ToString();
+
+        if (!string.IsNullOrEmpty(valore))
+        {
+            try
+            {
+                switch (tipoCampo)
+                {
+                    case "N_Operatori":
+                        if (int.TryParse(valore, out int nOperai))
+                            voce.N_Operatori = nOperai;
+                        break;
+                    case "Qta_Voce":
+                        if (double.TryParse(valore, out double qtaVoce))
+                            voce.Qta_Voce = (float)qtaVoce;
+                        break;
+                    case "Qta_Mat":
+                        if (double.TryParse(valore, out double qtaMat))
+                            voce.Qta_Mat = (float)qtaMat;
+                        break;
+                    case "Costo_Mat":
+                        if (decimal.TryParse(valore, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal costoMat))
+                            voce.Costo_Mat = (float)costoMat;
+                        break;
+                    case "UnitaMisura":
+                        voce.UnitaMisura = valore;
+                        break;
+                    case "CodiceMateriale":
+                        voce.CodiceMateriale = valore;
+                        // Se è materiale, carica anche i dettagli
+                        if (!string.IsNullOrEmpty(valore))
+                            await CaricaDettagliMateriale(voce, valore);
+                        break;
+                }
+
+                await RicalcolaVoceInTempoReale(voce);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Errore modifica campo {tipoCampo}: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task CaricaDettagliMateriale(DettaglioPreventivo voce, string codiceMateriale)
+    {
+        try
+        {
+            var materiale = await MaterialiService.GetMaterialeByCodice(codiceMateriale);
+            if (materiale != null)
+            {
+                voce.UM_Mat = materiale.UnitaMisura ?? "";
+                voce.Costo_Mat = (float)(materiale.PrezzoUnitario ?? 0); // 🔥 CAST AGGIUNTO
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore caricamento materiale: {ex.Message}");
+        }
+    }
+    private async Task OnMaterialeCambiato(ChangeEventArgs e, DettaglioPreventivo voce)
+    {
+        var codiceMateriale = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(codiceMateriale))
+        {
+            await OnMaterialeSelezionato(e, voce);
+            // Dopo aver cambiato materiale, ricalcola
+            await RicalcolaVoceInTempoReale(voce);
+        }
+    }
+    private async Task RicalcolaVoceInTempoReale(DettaglioPreventivo voce)
+    {
+        try
+        {
+            // Piccolo delay per permettere al binding di aggiornare il modello
+            await Task.Delay(50);
+
+            var lunghezzaFloat = (float)(imbarcazioneSelezionata?.Lunghezza ?? 0);
+            var voceCalcolata = await CalcoloService.CalcolaTotaleVoce(voce, lunghezzaFloat);
+
+            // Aggiorna la voce con i nuovi calcoli
+            voce.ImportoVoce = voceCalcolata.ImportoVoce;
+            voce.ImportoMateriale = voceCalcolata.ImportoMateriale;
+            voce.TotaleVoce = voceCalcolata.TotaleVoce;
+
+            // Ricalcola i totali del preventivo
+            RicalcolaTotali();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Errore ricalcolo automatico: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region AZIONI PREVENTIVO
+    private async Task RegistraPreventivo()
+    {
+        // CONTROLLI PRELIMINARI
+        if (!await ValidazionePreventivo())
+            return;
+
+        try
+        {
+            // PREPARA DATI PREVENTIVO
+            preventivo.DataScadenza = dataScadenza;
+            preventivo.ImportoTotale = totalePreventivo;
+            preventivo.Stato = "BOZZA";
+            preventivo.NomeBarca = imbarcazioneSelezionata?.Nome_Imbarcazione ?? "";
+            preventivo.RagioneSociale = clienteSelezionato?.RagioneSociale ?? "";
+
+            // SALVA IN TRANSACTION
+            var success = await SalvaPreventivoCompleto();
+
+            if (success)
+            {
+                MostraSuccesso("✅ Preventivo salvato con successo!");
+                Navigation.NavigateTo("/amministrazione");
+            }
+            else
+            {
+                Console.WriteLine("❌ Errore nel salvataggio del preventivo");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ ERRORE CRITICO: {ex.Message}");
+        }
+    }
+
+    private async Task<bool> ValidazionePreventivo()
+    {
+        // VERIFICA CLIENTE E BARCA
+        if (clienteSelezionatoId == 0)
+        {
+            MostraErrore("Seleziona un cliente");
+            return false;
+        }
+
+        if (imbarcazioneSelezionataId == 0)
+        {
+            MostraErrore("Seleziona un'imbarcazione");
+            return false;
+        }
+
+        // VERIFICA VOCI PREVENTIVO
+        if (!vociPreventivo.Any())
+        {
+            MostraErrore("Inserisci almeno una voce nel preventivo");
+            return false;
+        }
+
+        // VERIFICA DATE
+        if (preventivo.DataCreazione > dataScadenza)
+        {
+            MostraErrore("La data di scadenza non può essere precedente alla data di creazione");
+            return false;
+        }
+
+        // VERIFICA DESCRIZIONE
+        if (string.IsNullOrWhiteSpace(preventivo.Descrizione))
+        {
+            MostraErrore("Inserisci una descrizione per il preventivo");
+            return false;
+        }
+
+        // VERIFICA OGNI VOCE
+        var voceIndex = 1;
+        foreach (var voce in vociPreventivo)
+        {
+            // VERIFICA CAMPI OBBLIGATORI
+            if (string.IsNullOrWhiteSpace(voce.DescrizioneAttivita))
+            {
+                MostraErrore($"Voce {voceIndex}: Descrizione attività mancante");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(voce.DescrizioneVoce))
+            {
+                MostraErrore($"Voce {voceIndex}: Descrizione voce mancante");
+                return false;
+            }
+
+            // VERIFICA NUMERI POSITIVI
+            if (voce.N_Operatori <= 0)
+            {
+                MostraErrore($"Voce {voceIndex}: Numero operatori deve essere maggiore di 0");
+                return false;
+            }
+
+            if (voce.Qta_Voce < 0)
+            {
+                MostraErrore($"Voce {voceIndex}: Quantità voce non può essere negativa");
+                return false;
+            }
+
+            if (voce.Qta_Mat < 0)
+            {
+                MostraErrore($"Voce {voceIndex}: Quantità materiale non può essere negativa");
+                return false;
+            }
+
+            if (voce.Costo_Mat < 0)
+            {
+                MostraErrore($"Voce {voceIndex}: Costo materiale non può essere negativo");
+                return false;
+            }
+
+            // VERIFICA UNITA DI MISURA ATTIVITÀ
+            if (string.IsNullOrWhiteSpace(voce.UnitaMisura))
+            {
+                MostraErrore($"Voce {voceIndex}: Unità di misura attività mancante");
+                return false;
+            }
+
+            // VERIFICA COERENZA MATERIALI
+            bool hasCodiceMateriale = !string.IsNullOrWhiteSpace(voce.CodiceMateriale);
+            bool hasUmMat = !string.IsNullOrWhiteSpace(voce.UM_Mat);
+
+            if (hasCodiceMateriale && !hasUmMat)
+            {
+                MostraErrore($"Voce {voceIndex}: Unità di misura materiale mancante per il materiale selezionato");
+                return false;
+            }
+
+            if (!hasCodiceMateriale && hasUmMat)
+            {
+                MostraErrore($"Voce {voceIndex}: Codice materiale mancante per l'unità di misura selezionata");
+                return false;
+            }
+
+            // VERIFICA MATERIALE SE CODICE PRESENTE
+            if (hasCodiceMateriale)
+            {
+                if (voce.Costo_Mat == 0)
+                {
+                    MostraErrore($"Voce {voceIndex}: Costo materiale zero per materiale selezionato");
+                    return false;
+                }
+
+                // VERIFICA ESISTENZA MATERIALE NEL DATABASE
+                try
+                {
+                    var materiale = await MaterialiService.GetMaterialeByCodice(voce.CodiceMateriale.Trim());
+                    if (materiale == null)
+                    {
+                        MostraErrore($"Voce {voceIndex}: Codice materiale '{voce.CodiceMateriale}' non trovato nel database");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MostraErrore($"Voce {voceIndex}: Errore verifica materiale - {ex.Message}");
+                    return false;
+                }
+            }
+
+            // VERIFICA CALCOLI
+            if (voce.ImportoVoce < 0 || voce.ImportoMateriale < 0 || voce.TotaleVoce < 0)
+            {
+                MostraErrore($"Voce {voceIndex}: Importi calcolati non validi");
+                return false;
+            }
+
+            voceIndex++;
+        }
+
+        // VERIFICA TOTALI
+        if (totalePreventivo <= 0)
+        {
+            MostraErrore("Il totale del preventivo deve essere maggiore di 0");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> SalvaPreventivoCompleto()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+
+        try
+        {
+            // 1. SALVA PREVENTIVO (INTESTAZIONE)
+            var preventivoId = await SalvaPreventivoIntestazione(connection, transaction);
+
+            if (preventivoId == 0)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
+            // 2. SALVA DETTAGLI PREVENTIVO
+            var dettagliSalvati = await SalvaDettagliPreventivo(connection, transaction, preventivoId);
+
+            if (!dettagliSalvati)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
+            // 3. COMMIT TRANSACTION
+            await transaction.CommitAsync();
+            MostraSuccesso($"✅ Preventivo {preventivoId} salvato con {vociPreventivo.Count} voci");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            Console.WriteLine($"❌ ERRORE Transaction: {ex.Message}");
+            return false;
+        }
+    }
+
+    private async Task<int> SalvaPreventivoIntestazione(SqlConnection connection, SqlTransaction transaction)
+    {
+        var query = @"INSERT INTO Preventivi (
+                    PreventivoId, DataCreazione, DataScadenza, Descrizione,
+                    ClienteId, RagioneSociale, ImportoTotale, Stato,
+                    NomeBarca, NomePreventivo
+                 ) VALUES (
+                    @PreventivoId, @DataCreazione, @DataScadenza, @Descrizione,
+                    @ClienteId, @RagioneSociale, @ImportoTotale, @Stato,
+                    @NomeBarca, @NomePreventivo
+                 )";
+
+        using var command = new SqlCommand(query, connection, transaction);
+
+        command.Parameters.AddWithValue("@PreventivoId", preventivo.PreventivoId);
+        command.Parameters.AddWithValue("@DataCreazione", preventivo.DataCreazione);
+        command.Parameters.AddWithValue("@DataScadenza", preventivo.DataScadenza);
+        command.Parameters.AddWithValue("@Descrizione", (object)preventivo.Descrizione ?? DBNull.Value);
+        command.Parameters.AddWithValue("@ClienteId", preventivo.ClienteId);
+        command.Parameters.AddWithValue("@RagioneSociale", (object)preventivo.RagioneSociale ?? DBNull.Value);
+        command.Parameters.AddWithValue("@ImportoTotale", preventivo.ImportoTotale);
+        command.Parameters.AddWithValue("@Stato", preventivo.Stato);
+        command.Parameters.AddWithValue("@NomeBarca", (object)preventivo.NomeBarca ?? DBNull.Value);
+        command.Parameters.AddWithValue("@NomePreventivo", (object)preventivo.NomePreventivo ?? DBNull.Value);
+
+        var result = await command.ExecuteNonQueryAsync();
+        return result > 0 ? preventivo.PreventivoId : 0;
+    }
+
+    private async Task<bool> SalvaDettagliPreventivo(SqlConnection connection, SqlTransaction transaction, int preventivoId)
+    {
+        var voceId = 1;
+        foreach (var voce in vociPreventivo)
+        {
+            var success = await SalvaSingoloDettaglio(connection, transaction, preventivoId, voce, voceId);
+            if (!success) return false;
+            voceId++;
+        }
+        return true;
+    }
+
+    private async Task<bool> SalvaSingoloDettaglio(SqlConnection connection, SqlTransaction transaction, int preventivoId, DettaglioPreventivo voce, int voceId)
+    {
+        var query = @"INSERT INTO DettaglioPreventivi (
+                    PreventivoId, VoceId, DescrizioneAttivita, DescrizioneVoce,
+                    N_Operatori, UnitaMisura, Qta_Voce, ImportoVoce,
+                    CodiceMateriale, UM_Mat, Costo_Mat, Qta_Mat, ImportoMateriale, TotaleVoce
+                 ) VALUES (
+                    @PreventivoId, @VoceId, @DescrizioneAttivita, @DescrizioneVoce,
+                    @N_Operatori, @UnitaMisura, @Qta_Voce, @ImportoVoce,
+                    @CodiceMateriale, @UM_Mat, @Costo_Mat, @Qta_Mat, @ImportoMateriale, @TotaleVoce
+                 )";
+
+        using var command = new SqlCommand(query, connection, transaction);
+
+        command.Parameters.AddWithValue("@PreventivoId", preventivoId);
+        command.Parameters.AddWithValue("@VoceId", voceId);
+        command.Parameters.AddWithValue("@DescrizioneAttivita", voce.DescrizioneAttivita);
+        command.Parameters.AddWithValue("@DescrizioneVoce", voce.DescrizioneVoce);
+        command.Parameters.AddWithValue("@N_Operatori", voce.N_Operatori);
+        command.Parameters.AddWithValue("@UnitaMisura", (object)voce.UnitaMisura ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Qta_Voce", voce.Qta_Voce);
+        command.Parameters.AddWithValue("@ImportoVoce", voce.ImportoVoce);
+        command.Parameters.AddWithValue("@CodiceMateriale", (object)voce.CodiceMateriale ?? DBNull.Value);
+        command.Parameters.AddWithValue("@UM_Mat", (object)voce.UM_Mat ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Costo_Mat", voce.Costo_Mat);
+        command.Parameters.AddWithValue("@Qta_Mat", voce.Qta_Mat);
+        command.Parameters.AddWithValue("@ImportoMateriale", voce.ImportoMateriale);
+        command.Parameters.AddWithValue("@TotaleVoce", voce.TotaleVoce);
+
+        var result = await command.ExecuteNonQueryAsync();
+        return result > 0;
+    }
+
+    private async Task SalvaComeModello()
+    {
+        if (!vociPreventivo.Any())
+        {
+            MostraErrore("Impossibile salvare un modello vuoto");
+            return;
+        }
+
+        // 1. Chiedi il nome del modello
+        var nomeModello = await JSRuntime.InvokeAsync<string>("prompt",
+            "Inserisci un nome per questo modello:",
+            $"Modello {DateTime.Today:dd/MM/yyyy}");
+
+        if (string.IsNullOrWhiteSpace(nomeModello))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Nome modello obbligatorio!");
+            return;
+        }
+
+        // 2. Verifica se il modello esiste già
+        bool modelloEsiste = await ModelliPreventiviService.ModelloEsiste(nomeModello);
+        if (modelloEsiste)
+        {
+            var confermaSovrascrivi = await JSRuntime.InvokeAsync<bool>("confirm",
+                $"Il modello '{nomeModello}' esiste già. Vuoi sovrascriverlo?");
+
+            if (!confermaSovrascrivi) return;
+        }
+
+        // 3. Converti le voci preventivo in voci modello
+        var vociModello = ConvertiPreventivoInModello(nomeModello);
+
+        // 4. Salva il modello
+        try
+        {
+            int modelloId = await ModelliPreventiviService.CreaModelloPreventivo(nomeModello, vociModello);
+            MostraSuccesso($"✅ Modello '{nomeModello}' salvato con ID: {modelloId}");
+        }
+        catch (Exception ex)
+        {
+            MostraErrore($"❌ Errore nel salvataggio: {ex.Message}");
+        }
+    }
+
+    // METODO PER CONVERTIRE PREVENTIVO → MODELLO
+    private List<ModelloPreventivo> ConvertiPreventivoInModello(string nomeModello)
+    {
+        var vociModello = new List<ModelloPreventivo>();
+        var voceId = 1;
+
+        foreach (var dettaglio in vociPreventivo)
+        {
+            vociModello.Add(new ModelloPreventivo
+            {
+                TitoloPreventivo = nomeModello,
+                VoceId = voceId++,
+                DescrizioneAttivita = dettaglio.DescrizioneAttivita,
+                DescrizioneVoce = dettaglio.DescrizioneVoce,
+                N_Operatori = dettaglio.N_Operatori,
+                UnitaMisura = dettaglio.UnitaMisura,
+                Qta_Voce = (double)dettaglio.Qta_Voce,
+                ImportoVoce = (decimal)dettaglio.ImportoVoce,
+                CodiceMateriale = dettaglio.CodiceMateriale,
+                ImportoMateriale = (decimal)dettaglio.ImportoMateriale,
+                TotaleVoce = (decimal)dettaglio.TotaleVoce
+            });
+        }
+
+        return vociModello;
+    }
+
+    private void MostraErrore(string messaggio)
+    {
+        messaggioErrore = messaggio;
+        mostraErrore = true;
+        mostraSuccesso = false;
+        StateHasChanged();
+
+        // Auto-rimuovi dopo 5 secondi
+        _ = Task.Delay(5000).ContinueWith(_ =>
+        {
+            mostraErrore = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void MostraSuccesso(string messaggio)
+    {
+        messaggioSuccesso = messaggio;
+        mostraSuccesso = true;
+        mostraErrore = false;
+        StateHasChanged();
+
+        // Auto-rimuovi dopo 3 secondi
+        _ = Task.Delay(3000).ContinueWith(_ =>
+        {
+            mostraSuccesso = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void NascondiMessaggi()
+    {
+        mostraErrore = false;
+        mostraSuccesso = false;
+        StateHasChanged();
+    }
+
+    private void Annulla() => Navigation.NavigateTo("/amministrazione");
+    #endregion
+
+}

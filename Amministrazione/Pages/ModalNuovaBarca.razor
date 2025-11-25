@@ -1,0 +1,190 @@
+﻿<link href="css/Amministrazione/ModalNuovaBarca.css" rel="stylesheet" />
+
+@using CNP.Segreteria.Models
+@using CNP.Amministrazione.Services
+@inject ClientiService ClientiService
+
+<div class="modal-overlay @(Visibile ? "mostrato" : "nascosto")">
+    <div class="modal-contenuto-compact">
+        <div class="modal-intestazione-compact">
+            <h3>➕ Nuova Barca</h3>
+            <button class="btn-chiusura" @onclick="Chiudi">✕</button>
+        </div>
+
+        <div class="modal-corpo-compact">
+            <div class="form-modale">
+                <div class="form-group-modale">
+                    <label>Nome Barca *</label>
+                    <input @bind="NuovaBarca.Nome_Imbarcazione" class="input-modale"
+                           placeholder="Nome dell'imbarcazione" />
+                    @if (!nomeBarcaValido)
+                    {
+                        <span class="validazione-errore">Campo obbligatorio</span>
+                    }
+                </div>
+
+                <div class="form-grid-modale">
+                    <div class="form-grid-modale-migliorato">
+                        <div class="form-group-modale combo-tipo-largo">
+                            <label>Tipo *</label>
+                            <select @bind="NuovaBarca.ID_Tipo" class="input-modale combo-largo">
+                                <option value="">-- Seleziona Tipo --</option>
+                                @foreach (var tipo in tipiImbarcazione)
+                                {
+                                    <option value="@tipo.ID_Tipo">@tipo.Nome_Tipo</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group-modale campo-lunghezza-compatto">
+                            <label>Lunghezza (m)</label>
+                            <input @bind="NuovaBarca.Lunghezza" class="input-modale campo-compatto"
+                                   type="number" step="4" placeholder="0" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group-modale">
+                    <label>Porto di Attracco</label>
+                    <input @bind="NuovaBarca.PortoAttracco" class="input-modale"
+                           placeholder="Porto di riferimento" />
+                </div>
+
+                @if (ClienteSelezionatoId > 0)
+                {
+                    <div class="info-cliente-associato">
+                        <div class="icona-cliente">👤</div>
+                        <div class="dettagli-cliente">
+                            <strong>Cliente associato:</strong>
+                            <div>@NomeClienteSelezionato</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert-compact alert-danger">
+                        ❌ Nessun cliente selezionato
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="modal-pulsanti-compact">
+            <button class="btn btn-outline" @onclick="Chiudi">Annulla</button>
+            <button class="btn btn-success" @onclick="SalvaBarca"
+                    disabled="@(!DatiValidi)">
+                💾 Salva Barca
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Visibile { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibileChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<Imbarcazione> OnBarcaSalvata { get; set; }
+
+    [Parameter]
+    public int ClienteSelezionatoId { get; set; }
+
+    [Parameter]
+    public string NomeClienteSelezionato { get; set; } = string.Empty;
+
+    [Inject]
+    private ImbarcazioniService ImbarcazioniService { get; set; } = default!;
+
+    private Imbarcazione NuovaBarca { get; set; } = new();
+    private List<TipoImbarcazione> tipiImbarcazione = new();
+    private bool nomeBarcaValido = true;
+    private bool salvataggioInCorso = false;
+
+    private bool DatiValidi => !string.IsNullOrWhiteSpace(NuovaBarca.Nome_Imbarcazione) &&
+                              NuovaBarca.ID_Tipo.HasValue &&
+                              ClienteSelezionatoId > 0; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaTipiImbarcazione();
+    }
+
+    private async Task CaricaTipiImbarcazione()
+    {
+        try
+        {
+            tipiImbarcazione = await ImbarcazioniService.GetTipiImbarcazione();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento tipi imbarcazione: {ex.Message}");
+        }
+    }
+
+    private async Task SalvaBarca()
+    {
+        if (!DatiValidi || salvataggioInCorso) return;
+
+        salvataggioInCorso = true;
+        StateHasChanged();
+
+        try
+        {
+            // OTTIENI il CodiceCliente dal ClienteID selezionato
+            var codiceCliente = await ClientiService.GetCodiceClienteById(ClienteSelezionatoId);
+
+            if (!codiceCliente.HasValue)
+            {
+                Console.WriteLine($"CodiceCliente non trovato per ClienteID: {ClienteSelezionatoId}");
+                return;
+            }
+
+            // ASSOCIA usando CodiceCliente
+            NuovaBarca.ID_Cliente = codiceCliente.Value;
+
+            // Verifica se barca già esiste
+            var esiste = await ImbarcazioniService.ImbarcazioneEsiste(NuovaBarca.Nome_Imbarcazione);
+            if (esiste)
+            {
+                Console.WriteLine($"Barca {NuovaBarca.Nome_Imbarcazione} già esistente");
+                return;
+            }
+
+            // Salva barca
+            var successo = await ImbarcazioniService.AggiungiImbarcazioneEssenziale(NuovaBarca);
+
+            if (successo)
+            {
+                await OnBarcaSalvata.InvokeAsync(NuovaBarca);
+                await Chiudi();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore salvataggio barca: {ex.Message}");
+        }
+        finally
+        {
+            salvataggioInCorso = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Chiudi()
+    {
+        NuovaBarca = new Imbarcazione();
+        nomeBarcaValido = true;
+        await VisibileChanged.InvokeAsync(false);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Visibile)
+        {
+            NuovaBarca = new Imbarcazione();
+            nomeBarcaValido = true;
+        }
+    }
+}

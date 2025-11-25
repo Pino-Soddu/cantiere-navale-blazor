@@ -1,0 +1,202 @@
+﻿@using CNP.Segreteria.Models
+@implements IDisposable
+
+<style>
+    .griglia-scroll-container {
+        width: 100%;
+        height: var(--altezza-griglia, 490px);
+        overflow: auto;
+        border: 1px solid #dee2e6;
+        background: white;
+        display: block;
+    }
+
+    .tabella-materiali {
+        min-width: 2000px;
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+        .tabella-materiali thead th {
+            background-color: var(--cnf-blu-scuro);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 12px 8px;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .tabella-materiali tbody td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .tabella-materiali tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* HEADER RICERCA - PER TUTTE LE ANAGRAFICHE */
+    .header-ricerca {
+        flex: 1;
+        max-width: 400px;
+        margin-right: 1rem;
+    }
+
+    .card-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .counter-badge {
+        background-color: var(--cnf-blu-medio);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* EVIDENZIAZIONE TEMPORANEA - VERDE MOLTO VIVIDO */
+    .riga-evidenziata {
+        background-color: #c3e6cb !important;
+        border-left: 5px solid #218838;
+        box-shadow: 0 0 12px rgba(33, 136, 56, 0.4);
+        transition: all 0.3s ease-in-out;
+    }
+
+        .riga-evidenziata td {
+            font-weight: 700;
+            color: #0f5132;
+        }
+</style>
+
+<!-- GRIGLIA FILTRATA -->
+@if (Materiali == null || !Materiali.Any())
+{
+    <div class="alert alert-warning">
+        Nessun materiale trovato nel database.
+    </div>
+}
+else if (materialiFiltrati.Count == 0 && !string.IsNullOrEmpty(testoRicerca))
+{
+    <div class="alert alert-info">
+        Nessun materiale trovato per "<strong>@testoRicerca</strong>"
+    </div>
+}
+else
+{
+    <div class="griglia-scroll-container" style="--altezza-griglia: @AltezzaGriglia;">
+        <table class="tabella-materiali table-striped">
+            <thead>
+                <tr>
+                    <th>Azioni</th>
+                    <th>ID</th>
+                    <th>Codice Materiale</th>
+                    <th>Descrizione</th>
+                    <th>Unità Misura</th>
+                    <th>Prezzo Unitario</th>
+                    <th>Quantità Disponibile</th>
+                    <th>Quantità Minima</th>
+                    <th>Data Ultimo Ordine</th>
+                    <th>Fornitore</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var materiale in materialiFiltrati)
+                {
+                    <tr class="@(materiale == MaterialeEvidenziato ? "riga-evidenziata" : "")">
+                        <!-- COLONNA AZIONI COME PRIMA CELLA -->
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" @onclick="() => OnModificaMateriale.InvokeAsync(materiale)">
+                                    ✏️
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => OnEliminaMateriale.InvokeAsync(materiale)">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+
+                        <!-- DATI MATERIALE -->
+                        <td><strong>@materiale.IDMateriale</strong></td>
+                        <td>@materiale.CodiceMateriale</td>
+                        <td>@materiale.Descrizione</td>
+                        <td>@materiale.UnitaMisura</td>
+                        <td>@materiale.PrezzoUnitario?.ToString("C2")</td>
+                        <td>@materiale.QuantitaDisponibile</td>
+                        <td>@materiale.QuantitaMinima</td>
+                        <td>@materiale.DataUltimoOrdine?.ToString("dd/MM/yyyy")</td>
+                        <td>@materiale.Fornitore</td>
+                        <td>@materiale.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<Materiale>? Materiali { get; set; }
+
+    [Parameter]
+    public EventCallback<Materiale> OnModificaMateriale { get; set; }
+
+    [Parameter]
+    public EventCallback<Materiale> OnEliminaMateriale { get; set; }
+
+    [Parameter]
+    public string AltezzaGriglia { get; set; } = "490px";
+
+    [Parameter]
+    public Materiale? MaterialeEvidenziato { get; set; }
+
+    private string testoRicerca = string.Empty;
+    private List<Materiale> materialiFiltrati = new();
+
+    protected override void OnParametersSet()
+    {
+        FiltraMateriali();
+    }
+
+    private void FiltraMateriali()
+    {
+        if (Materiali == null)
+        {
+            materialiFiltrati = new List<Materiale>();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(testoRicerca))
+        {
+            materialiFiltrati = Materiali;
+            return;
+        }
+
+        var termine = testoRicerca.Trim().ToLower();
+        materialiFiltrati = Materiali.Where(m =>
+            (m.CodiceMateriale?.ToLower().Contains(termine) == true) ||
+            (m.Descrizione?.ToLower().Contains(termine) == true) ||
+            (m.Fornitore?.ToLower().Contains(termine) == true)
+        ).ToList();
+    }
+
+    public void Dispose()
+    {
+        // Cleanup se necessario
+    }
+}

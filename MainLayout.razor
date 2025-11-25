@@ -1,0 +1,415 @@
+﻿@using Microsoft.Extensions.Options
+@using CNP.Models.Configurazione
+@using CNP.Pubblica.Components
+@using CNP.Login.Components
+@inherits LayoutComponentBase
+
+<style>
+    /* =========== HEADER CSS PURO UNIFICATO =========== */
+    .header-unificato {
+        background-color: var(--cnf-blu-scuro);
+        height: 84px;
+        border-bottom: 3px solid var(--cnf-blu-medio);
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+
+    .header-logo {
+        flex: 0 0 auto;
+    }
+
+        .header-logo img {
+            height: 80px;
+            transition: transform 0.3s ease;
+        }
+
+            .header-logo img:hover {
+                transform: scale(1.05);
+            }
+
+    .header-centro {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .header-nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+    }
+
+    .nav-link-custom {
+        color: white !important;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .nav-link-custom:hover {
+            color: var(--cnf-blu-chiaro) !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+    .dropdown-custom {
+        position: relative;
+        cursor: pointer;
+    }
+
+    .dropdown-menu-custom {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid var(--cnf-blu-medio);
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 1001;
+        min-width: 180px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dropdown-item-custom {
+        display: block;
+        padding: 0.5rem 1rem;
+        color: var(--cnf-blu-scuro);
+        text-decoration: none;
+        border-bottom: 1px solid #f0f0f0;
+        white-space: nowrap;
+    }
+
+        .dropdown-item-custom:hover {
+            background-color: var(--cnf-grigio-chiaro);
+            color: var(--cnf-blu-scuro);
+        }
+
+        .dropdown-item-custom:last-child {
+            border-bottom: none;
+        }
+
+    .titolo-area {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .header-chat {
+        flex: 0 0 auto;
+    }
+
+    .btn-chat-custom {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+        .btn-chat-custom:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+    /* =========== CONTENUTO PRINCIPALE =========== */
+    .main-content {
+        min-height: calc(100vh - 84px - 120px); /* viewport - header - footer */
+        padding-top: 0;
+    }
+
+    /* =========== STILI MODALE (esistenti mantenuti) =========== */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+        .modal.nascosto {
+            display: none;
+        }
+
+        .modal.mostrato {
+            display: flex;
+        }
+
+    .modal-contenuto {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-intestazione {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+        .modal-intestazione h3 {
+            margin: 0;
+            color: #333;
+        }
+
+    .btn-chiusura {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+        .btn-chiusura:hover {
+            color: #333;
+        }
+
+    .modal-corpo {
+        padding: 1rem;
+    }
+
+    .modal-pulsanti {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* =========== RESPONSIVE =========== */
+    @@media (max-width: 768px) {
+        .header-container {
+            padding: 0 1rem;
+        }
+
+        .header-logo img {
+            height: 60px;
+        }
+
+        .header-nav {
+            gap: 1rem;
+        }
+
+        .nav-link-custom {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .titolo-area {
+            font-size: 1.2rem;
+        }
+
+        .btn-chat-custom {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<!-- HEADER CSS PURO UNIFICATO -->
+<header class="header-unificato">
+    <div class="header-container">
+        <!-- LOGO - SEMPRE 80px -->
+        <div class="header-logo">
+            <a href="/" style="text-decoration: none;">
+                <img src="/Immagini/logo2.png" alt="Cantiere Navale Fulghesu Sa Perdixedda">
+            </a>
+        </div>
+
+        <!-- CENTRO - DINAMICO -->
+        <div class="header-centro">
+            @if (IsHomepage)
+            {
+                <!-- MENU HOMEPAGE PUBBLICA -->
+                <nav class="header-nav">
+                    <span class="nav-link-custom" @onclick="AccediAreaClienti">Area Clienti</span>
+
+                    <div class="dropdown-custom" @onclick="ToggleAreaRiservata">
+                        <span class="nav-link-custom">
+                            Area Riservata <span style="font-size: 0.8em;">▼</span>
+                        </span>
+                        @if (mostraMenuAreaRiservata)
+                        {
+                            <div class="dropdown-menu-custom">
+                                <span class="dropdown-item-custom" @onclick='() => AccediAreaRiservata("/amministrazione")'>
+                                    Amministrazione
+                                </span>
+                                <span class="dropdown-item-custom" @onclick='() => AccediAreaRiservata("/segreteria")'>
+                                    Segreteria
+                                </span>
+                                <span class="dropdown-item-custom" @onclick='() => AccediAreaRiservata("/schedalavorazione")'>
+                                    Scheda Lavorazione
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <a class="nav-link-custom" href="/contatti">Contatti</a>
+                </nav>
+            }
+            else
+            {
+                <!-- TITOLO AREA SPECIFICA -->
+                <div class="titolo-area">@TitoloAreaCorrente</div>
+            }
+        </div>
+
+        <!-- CHAT/ASSISTENTE A DESTRA -->
+        <div class="header-chat">
+            <button class="btn-chat-custom" @onclick="ApriChat">
+                💬 @(IsHomepage ? "Chat con noi" : "Assistente")
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENUTO PRINCIPALE -->
+<main class="main-content" role="main">
+    @Body
+</main>
+
+<!-- FOOTER - SOLO IN HOMEPAGE -->
+@if (IsHomepage)
+{
+    <footer class="border-top footer text-muted bg-light">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>@(DatiAzienda?.RagioneSociale ?? "")</h6>
+                    <p class="mb-1">@(DatiAzienda?.Descrizione ?? "")</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1">
+                        <strong>📞 Telefono:</strong> @(DatiAzienda?.Contatti?.Telefono1 ?? "") | @(DatiAzienda?.Contatti?.Telefono2 ?? "")<br>
+                        <strong>✉️ Email:</strong> @(DatiAzienda?.Contatti?.Email ?? "")<br>
+                        <strong>📍 Indirizzo:</strong> @(DatiAzienda?.Indirizzo?.Via ?? "")<br>@(DatiAzienda?.Indirizzo?.Localita ?? "")<br>
+                        <strong>🏢 P.IVA: </strong>@(DatiAzienda?.PartitaIVA ?? "")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+}
+
+<!-- COMPONENTI OVERLAY -->
+@if (ChatAperta)
+{
+    <ChatOverlay @bind-Visibile="ChatAperta" />
+}
+
+<!-- MODALE LOGIN -->
+<ModaleLogin @bind-Visibile="mostraLogin"
+             TipoAccesso="@tipoAccessoSelezionato"
+             Destinazione="@destinazioneDopoLogin" />
+
+@code {
+    // STATO COMPONENTE
+    private bool ChatAperta = false;
+    private DatiAzienda? DatiAzienda;
+    private bool mostraMenuAreaRiservata = false;
+    private bool mostraLogin = false;
+    private string tipoAccessoSelezionato = "Operatore";
+    private string destinazioneDopoLogin = "/areaclienti";
+
+    [Inject]
+    private IOptions<DatiAzienda>? DatiAziendaOptions { get; set; }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    // PROPRIETÀ DINAMICHE
+    private bool IsHomepage => Navigation.Uri == Navigation.BaseUri ||
+                              Navigation.Uri == Navigation.BaseUri + "/";
+
+    private bool IsAreaClienti => Navigation.Uri.Contains("/areaclienti");
+    private bool IsAreaSegreteria => Navigation.Uri.Contains("/segreteria");
+    private bool IsAreaSchedaLavorazione => Navigation.Uri.Contains("/schedalavorazione");
+
+    private string TitoloAreaCorrente
+    {
+        get
+        {
+            if (IsAreaClienti) return "Area Clienti";
+            if (IsAreaSegreteria) return "Area Segreteria";
+            if (IsAreaSchedaLavorazione) return "Scheda Lavorazione";
+            if (Navigation.Uri.Contains("/amministrazione")) return "Area Amministrazione";
+            return "Area Riservata";
+        }
+    }
+
+    // METODI
+    private void ToggleAreaRiservata()
+    {
+        mostraMenuAreaRiservata = !mostraMenuAreaRiservata;
+        StateHasChanged();
+    }
+
+    private void ChiudiMenu()
+    {
+        mostraMenuAreaRiservata = false;
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        DatiAzienda = DatiAziendaOptions?.Value;
+    }
+
+    private void ApriChat()
+    {
+        ChatAperta = true;
+        StateHasChanged();
+    }
+
+    private void AccediAreaClienti()
+    {
+        tipoAccessoSelezionato = "Cliente";
+        destinazioneDopoLogin = "/areaclienti";
+        mostraLogin = true;
+        ChiudiMenu();
+        StateHasChanged();
+    }
+
+    private void AccediAreaRiservata(string destinazione)
+    {
+        tipoAccessoSelezionato = "Operatore";
+        destinazioneDopoLogin = destinazione;
+        mostraLogin = true;
+        ChiudiMenu();
+        StateHasChanged();
+    }
+}

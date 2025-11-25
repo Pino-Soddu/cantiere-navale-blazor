@@ -1,0 +1,262 @@
+﻿@using CNP.Segreteria.Models
+@using CNP.Segreteria.Services
+@inject AnagraficheService AnagraficheService
+
+<div class="modal @(Mostra ? "d-block" : "d-none")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <!-- HEADER COMPATTO -->
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title fs-6">
+                    @(Imbarcazione.ID_Imbarcazione > 0 ? "Modifica Imbarcazione" : "Nuova Imbarcazione")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModal"></button>
+            </div>
+
+            <div class="modal-body py-2">
+                <div class="container-fluid">
+                    <!-- PRIMA RIGA - DATI IDENTIFICATIVI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 1 - DATI PRINCIPALI (AZZURRO) -->
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-2">
+                                <div class="card-header bg-primary text-white py-1">
+                                    <h6 class="mb-0 small">⛵ Dati Identificativi</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold small">Nome Imbarcazione *</label>
+                                        <input class="form-control form-control-sm" @bind="Imbarcazione.Nome_Imbarcazione" />
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Tipo Imbarcazione</label>
+                                                <select class="form-select form-select-sm" @bind="Imbarcazione.ID_Tipo">
+                                                    <option value="">Seleziona tipo</option>
+                                                    @foreach (var tipo in tipiImbarcazione)
+                                                    {
+                                                        <option value="@tipo.ID_Tipo">@tipo.Nome_Tipo</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">Cliente</label>
+                                                <select class="form-select form-select-sm" @bind="Imbarcazione.ID_Cliente">
+                                                    <option value="">Seleziona cliente</option>
+                                                    @if (Clienti != null)
+                                                    {
+                                                        @foreach (var cliente in Clienti)
+                                                        {
+                                                            <!-- ⚠️ MOSTRA CODICE CLIENTE + RAGIONE SOCIALE -->
+                                                            <option value="@cliente.ClienteID">@cliente.CodiceCliente - @cliente.RagioneSociale</option>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="" disabled>Caricamento clienti...</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Anno Costruzione</label>
+                                        <select class="form-select form-select-sm" @bind="Imbarcazione.Anno_Costruzione">
+                                            <option value="">Seleziona anno</option>
+                                            @foreach (var anno in anniCostruzione)
+                                            {
+                                                <option value="@anno">@anno</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 2 - DIMENSIONI (VERDE CHIARO) -->
+                        <div class="col-md-6">
+                            <div class="card border-success mb-2">
+                                <div class="card-header bg-success text-white py-1">
+                                    <h6 class="mb-0 small">📐 Dimensioni</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0fff0;">
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Lunghezza (m)</label>
+                                                <input class="form-control form-control-sm" @bind="Imbarcazione.Lunghezza" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Larghezza (m)</label>
+                                                <input class="form-control form-control-sm" @bind="Imbarcazione.Larghezza" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Pescaggio FB (m)</label>
+                                                <input class="form-control form-control-sm" @bind="Imbarcazione.Pescaggio_FB" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Pescaggio EB (m)</label>
+                                                <input class="form-control form-control-sm" @bind="Imbarcazione.Pescaggio_EB" type="number" step="0.01" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Peso (kg)</label>
+                                        <input class="form-control form-control-sm" @bind="Imbarcazione.Peso" type="number" step="0.01" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECONDA RIGA - DATI TECNICI E INFORMAZIONI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 3 - DATI TECNICI (GIALLO) -->
+                        <div class="col-md-6">
+                            <div class="card border-warning mb-2">
+                                <div class="card-header bg-warning text-dark py-1">
+                                    <h6 class="mb-0 small">🔧 Dati Tecnici</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #fffaf0;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Materiale Scafo</label>
+                                        <select class="form-select form-select-sm" @bind="Imbarcazione.Materiale_Scafo">
+                                            <option value="">Seleziona materiale</option>
+                                            <option value="Vetroresina">Vetroresina</option>
+                                            <option value="Alluminio">Alluminio</option>
+                                            <option value="Legno">Legno</option>
+                                            <option value="Acciaio">Acciaio</option>
+                                            <option value="Composito">Composito</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Condizioni Barca</label>
+                                        <select class="form-select form-select-sm" @bind="Imbarcazione.Stato">
+                                            <option value="">Seleziona condizioni</option>
+                                            <option value="Eccellenti">🌟 Eccellenti</option>
+                                            <option value="Ottime">✅ Ottime</option>
+                                            <option value="Buone">👍 Buone</option>
+                                            <option value="Discrete">🔧 Discrete (richiede piccoli interventi)</option>
+                                            <option value="Mediocri">⚠️ Mediocri (richiede manutenzione)</option>
+                                            <option value="Pessime">🚨 Pessime (richiede importanti lavori)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Data Acquisto</label>
+                                        <input class="form-control form-control-sm" @bind="Imbarcazione.Data_Acquisto" type="date" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 4 - INFORMAZIONI AGGIUNTIVE (LAVANDA) -->
+                        <div class="col-md-6">
+                            <div class="card border-info mb-2">
+                                <div class="card-header bg-info text-white py-1">
+                                    <h6 class="mb-0 small">📍 Informazioni</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f8f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Porto Attracco</label>
+                                        <input class="form-control form-control-sm" @bind="Imbarcazione.PortoAttracco" />
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Note</label>
+                                        <textarea class="form-control" rows="3" @bind="Imbarcazione.Note"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER COMPATTO -->
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ChiudiModal">
+                    Annulla
+                </button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="SalvaImbarcazione">
+                    💾 Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Mostra { get; set; }
+
+    [Parameter]
+    public Imbarcazione Imbarcazione { get; set; } = new();
+
+    [Parameter]
+    public List<Cliente>? Clienti { get; set; }
+
+    [Parameter]
+    public EventCallback OnChiudi { get; set; }
+
+    [Parameter]
+    public EventCallback<Imbarcazione> OnSalva { get; set; }
+
+    private List<TipoImbarcazione> tipiImbarcazione = new();
+    private List<int> anniCostruzione = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaDatiDropdown();
+        GeneraAnniCostruzione();
+    }
+
+    private async Task CaricaDatiDropdown()
+    {
+        try
+        {
+            tipiImbarcazione = await AnagraficheService.GetTipiImbarcazione();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento dropdown: {ex.Message}");
+        }
+    }
+
+    private void GeneraAnniCostruzione()
+    {
+        var annoCorrente = DateTime.Now.Year;
+        for (int anno = annoCorrente; anno >= 1950; anno--)
+        {
+            anniCostruzione.Add(anno);
+        }
+    }
+
+    private async Task ChiudiModal()
+    {
+        await OnChiudi.InvokeAsync();
+    }
+
+    private async Task SalvaImbarcazione()
+    {
+        await OnSalva.InvokeAsync(Imbarcazione);
+        await ChiudiModal();
+    }
+}

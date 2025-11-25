@@ -1,0 +1,132 @@
+﻿@using CNP.Segreteria.Models
+
+<div class="modal @(Mostra ? "d-block" : "d-none")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <!-- HEADER COMPATTO -->
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title fs-6">
+                    @(Fornitore.FornitoreID > 0 ? "Modifica Fornitore" : "Nuovo Fornitore")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModal"></button>
+            </div>
+
+            <div class="modal-body py-2">
+                <div class="container-fluid">
+                    <!-- PRIMA RIGA - DATI PRINCIPALI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 1 - DATI ANAGRAFICI (AZZURRO) -->
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-2">
+                                <div class="card-header bg-primary text-white py-1">
+                                    <h6 class="mb-0 small">📋 Dati Anagrafici</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold small">Ragione Sociale *</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.RagioneSociale" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Indirizzo</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.Indirizzo" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 2 - CONTATTI (VERDE CHIARO) -->
+                        <div class="col-md-6">
+                            <div class="card border-success mb-2">
+                                <div class="card-header bg-success text-white py-1">
+                                    <h6 class="mb-0 small">📞 Contatti</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0fff0;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Telefono</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.Telefono" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Email</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.Email" type="email" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECONDA RIGA - DATI FISCALI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 3 - DATI FISCALI (GIALLO) -->
+                        <div class="col-md-6">
+                            <div class="card border-warning mb-2">
+                                <div class="card-header bg-warning text-dark py-1">
+                                    <h6 class="mb-0 small">💰 Dati Fiscali</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #fffaf0;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Partita IVA</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.PartitaIVA" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Codice SDI</label>
+                                        <input class="form-control form-control-sm" @bind="Fornitore.CodiceSDI" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 4 - NOTE (GRIGIO) -->
+                        <div class="col-md-6">
+                            <div class="card border-secondary mb-2">
+                                <div class="card-header bg-secondary text-white py-1">
+                                    <h6 class="mb-0 small">📝 Note</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f8f9fa;">
+                                    <textarea class="form-control" rows="3" @bind="Fornitore.Note"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER COMPATTO -->
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ChiudiModal">
+                    Annulla
+                </button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="SalvaFornitore">
+                    💾 Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Mostra { get; set; }
+
+    [Parameter]
+    public Fornitore Fornitore { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnChiudi { get; set; }
+
+    [Parameter]
+    public EventCallback<Fornitore> OnSalva { get; set; }
+
+    private async Task ChiudiModal()
+    {
+        await OnChiudi.InvokeAsync();
+    }
+
+    private async Task SalvaFornitore()
+    {
+        await OnSalva.InvokeAsync(Fornitore);
+        await ChiudiModal();
+    }
+}

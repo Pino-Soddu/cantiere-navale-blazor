@@ -1,0 +1,361 @@
+﻿@page "/amministrazione"
+@layout LayoutAmministrazione
+@using CNP.SchedaLavorazione.Models
+@using CNP.Amministrazione.Services
+@using CNP.Amministrazione.Components
+@inject PreventiviService PreventiviService
+@inject EmailService EmailService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Amministrazione - Cantiere Navale Fulghesu</PageTitle>
+
+<!-- HEADER COERENTE CON SEGRETERIA -->
+<header class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3">
+    <div class="container-fluid">
+        <!-- LOGO -->
+        <a class="navbar-brand" href="/">
+            <img src="/Immagini/logo2.png" alt="Cantiere Navale Fulghesu Sa Perdixedda">
+        </a>
+
+        <!-- TITOLO AREA AMMINISTRAZIONE AL CENTRO -->
+        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-center">
+            <div class="navbar-nav">
+                <span class="nav-link text-dark fw-bold fs-4">Area Amministrazione</span>
+            </div>
+        </div>
+
+        <!-- PULSANTE CHAT A DESTRA -->
+        <div class="d-flex">
+            <button class="btn btn-outline-primary">
+                💬 Assistente
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENUTO PRINCIPALE -->
+<div class="container-fluid">
+
+    <!-- SELEZIONE FUNZIONE AMMINISTRATIVA COMPATTA -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-start align-items-center py-2">
+                    <h5 class="mb-0 me-5">Seleziona Funzione Amministrativa</h5>
+                    <div class="d-flex gap-2">
+                        @foreach (var funzione in funzioniAmministrative)
+                        {
+                            <button class="btn btn-sm @(funzioneSelezionata == funzione ? "btn-primary" : "btn-outline-primary")"
+                                    @onclick="() => SelezionaFunzione(funzione)">
+                                @GetIconaFunzione(funzione) @funzione
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENUTO DINAMICO PER FUNZIONE SELEZIONATA -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <h5 class="mb-0">@funzioneSelezionata</h5>
+
+                    @if (funzioneSelezionata == "Preventivi")
+                    {
+                        <div class="card-header-actions">
+                            <!-- BARRA RICERCA -->
+                            <div class="header-ricerca">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">🔍</span>
+                                    <input type="text" class="form-control" placeholder="Cerca..."
+                                           value="@testoRicercaGlobale" @oninput="OnTestoRicercaChanged" />
+                                </div>
+                            </div>
+
+                            <!-- CONTATORE -->
+                            <span class="counter-badge">
+                                @if (string.IsNullOrEmpty(testoRicercaGlobale))
+                                {
+                                    <text>@preventivi.Count</text>
+                                }
+                                else
+                                {
+                                    <text>@preventiviFiltrati.Count/@preventivi.Count</text>
+                                }
+                            </span>
+
+                            <!-- PULSANTI -->
+                            <button class="btn btn-sm btn-success" @onclick="ApriNuovoPreventivo">
+                                ＋ Nuovo Preventivo
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary">
+                                📁 Esporta
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card-header-actions">
+                            <span class="text-muted">Funzione disponibile prossimamente</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="card-body p-0">
+                    @if (funzioneSelezionata == "Preventivi")
+                    {
+                        @if (caricamentoInCorso)
+                        {
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Caricamento...</span>
+                                </div>
+                                <p class="mt-2">Caricamento preventivi in corso...</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <GrigliaPreventivi Preventivi="@preventiviFiltrati"
+                                               OnModificaPreventivo="ApriModificaPreventivo"
+                                               OnInviaPreventivo="GestisciInvioPreventivo"
+                                               OnEliminaPreventivo="EliminaPreventivo"
+                                               AltezzaGriglia="@AltezzaGrigliaCalcolata"
+                                               PreventivoEvidenziato="@preventivoEvidenziato" />
+                        }
+                    }
+                    else
+                    {
+                        <!-- MESSAGGIO PER FUNZIONI NON ANCORA IMPLEMENTATE -->
+                        <div class="text-center py-5">
+                            <div class="display-1 text-muted mb-3">🚧</div>
+                            <h4 class="text-muted">Funzione "@funzioneSelezionata"</h4>
+                            <p class="text-muted">Disponibile prossimamente</p>
+                            <p class="small text-muted">Questa funzionalità sarà implementata nelle prossime versioni</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    // LISTA FUNZIONI AMMINISTRATIVE
+    private List<string> funzioniAmministrative = new()
+    {
+        "Preventivi",
+        "Gestione Pagamenti",
+        "Report e Statistiche",
+        "Configurazione Sistema"
+    };
+
+    private string funzioneSelezionata = "Preventivi";
+    private bool caricamentoInCorso = false;
+    private string testoRicercaGlobale = "";
+    private double AltezzaGrigliaCalcolata => 500;
+
+    // VARIABILI PER PREVENTIVI
+    private List<Preventivo> preventivi = new();
+    private List<Preventivo> preventiviFiltrati = new();
+    private Preventivo? preventivoEvidenziato = null;
+    private Preventivo preventivoSelezionato = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaPreventivi();
+    }
+
+    private async Task CaricaPreventivi()
+    {
+        caricamentoInCorso = true;
+        StateHasChanged();
+
+        try
+        {
+            preventivi = await PreventiviService.GetPreventivi();
+            preventiviFiltrati = preventivi;
+        }
+        catch (Exception ex)
+        {
+            // TODO: Gestire errore
+            Console.WriteLine($"Errore caricamento preventivi: {ex.Message}");
+        }
+        finally
+        {
+            caricamentoInCorso = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelezionaFunzione(string funzione)
+    {
+        funzioneSelezionata = funzione;
+        testoRicercaGlobale = "";
+    }
+
+    private string GetIconaFunzione(string funzione)
+    {
+        return funzione switch
+        {
+            "Preventivi" => "📊",
+            "Gestione Pagamenti" => "💰",
+            "Report e Statistiche" => "📈",
+            "Configurazione Sistema" => "⚙️",
+            _ => "📁"
+        };
+    }
+
+    private void OnTestoRicercaChanged(ChangeEventArgs e)
+    {
+        testoRicercaGlobale = e.Value?.ToString() ?? "";
+        FiltraPreventivi();
+    }
+
+    private void FiltraPreventivi()
+    {
+        if (string.IsNullOrWhiteSpace(testoRicercaGlobale))
+        {
+            preventiviFiltrati = preventivi;
+        }
+        else
+        {
+            var ricerca = testoRicercaGlobale.ToLower();
+            preventiviFiltrati = preventivi.Where(p =>
+                (p.RagioneSociale?.ToLower().Contains(ricerca) ?? false) ||
+                (p.NomeBarca?.ToLower().Contains(ricerca) ?? false) ||
+                (p.NomePreventivo?.ToLower().Contains(ricerca) ?? false) ||
+                (p.Stato?.ToLower().Contains(ricerca) ?? false) ||
+                p.PreventivoId.ToString().Contains(ricerca)
+            ).ToList();
+        }
+    }
+
+    private async Task ApriNuovoPreventivo()
+    {
+        try
+        {
+            // Genera nuovo ID preventivo
+            var prossimoId = await PreventiviService.GetProssimoPreventivoId();
+
+            // Naviga alla pagina nuovo preventivo
+            Navigation.NavigateTo("/amministrazione/nuovo-preventivo");
+        }
+        catch (Exception ex)
+        {
+            // Gestione errore
+            Console.WriteLine($"Errore apertura nuovo preventivo: {ex.Message}");
+            // TODO: Mostrare messaggio errore all'utente
+        }
+    }
+
+    private void ApriModificaPreventivo(Preventivo preventivo)
+    {
+        preventivoSelezionato = preventivo;
+        Navigation.NavigateTo($"/amministrazione/modifica-preventivo/{preventivo.PreventivoId}");
+    }
+
+    private void ChiudiPreventivo()
+    {
+        preventivoSelezionato = new Preventivo();
+    }
+
+    private async Task SalvaPreventivo()
+    {
+        try
+        {
+            bool successo;
+
+            if (preventivoSelezionato.PreventivoId > 0)
+            {
+                // MODIFICA
+                successo = await PreventiviService.ModificaPreventivo(preventivoSelezionato);
+            }
+            else
+            {
+                // NUOVO
+                successo = await PreventiviService.AggiungiPreventivo(preventivoSelezionato);
+            }
+
+            if (successo)
+            {
+                await CaricaPreventivi(); // Ricarica i dati
+            }
+            else
+            {
+                // TODO: Mostrare messaggio errore
+                Console.WriteLine("Errore nel salvataggio del preventivo");
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: Gestire errore
+            Console.WriteLine($"Errore salvataggio preventivo: {ex.Message}");
+        }
+    }
+
+    private async Task EliminaPreventivo(Preventivo preventivo)
+    {
+        // AGGIUNGI CONFERMA
+        var conferma = await JSRuntime.InvokeAsync<bool>("confirm",
+            $"Sei sicuro di voler eliminare il preventivo #{preventivo.PreventivoId} - {preventivo.NomePreventivo}? L'operazione non può essere annullata.");
+
+        if (!conferma) return; // SE NON CONFERMA, ESCI
+
+        try
+        {
+            var successo = await PreventiviService.EliminaPreventivoCompleto(preventivo.PreventivoId);
+            if (successo)
+            {
+                await CaricaPreventivi(); // Ricarica i dati
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: Gestire errore
+            Console.WriteLine($"Errore eliminazione preventivo: {ex.Message}");
+        }
+    }
+
+    private async Task GestisciInvioPreventivo(Preventivo preventivo)
+    {
+        try
+        {
+            // CONFERMA INVIO
+            var conferma = await JSRuntime.InvokeAsync<bool>("confirm",
+                $"Sei sicuro di voler inviare il preventivo #{preventivo.PreventivoId} a {preventivo.RagioneSociale}?");
+
+            if (!conferma) return;
+
+            // INVIO EMAIL
+            var risultato = await EmailService.InviaPreventivoCliente(preventivo.PreventivoId);
+
+            if (risultato)
+            {
+                // Ricarica la lista per aggiornare lo stato
+                await CaricaPreventivi();
+
+                // NOTIFICA SUCCESSO
+                await JSRuntime.InvokeVoidAsync("alert",
+                    $"Preventivo #{preventivo.PreventivoId} inviato con successo!");
+            }
+            else
+            {
+                // NOTIFICA ERRORE
+                await JSRuntime.InvokeVoidAsync("alert",
+                    $"Errore nell'invio del preventivo #{preventivo.PreventivoId}. Controlla i log.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // GESTIONE ERRORE
+            await JSRuntime.InvokeVoidAsync("alert",
+                $"Errore durante l'invio: {ex.Message}");
+            Console.WriteLine($"Errore invio preventivo {preventivo.PreventivoId}: {ex.Message}");
+        }
+    }
+}

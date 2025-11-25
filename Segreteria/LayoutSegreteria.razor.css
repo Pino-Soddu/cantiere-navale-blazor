@@ -1,0 +1,39 @@
+/* HEADER PERSONALIZZATO SEGRETERIA */
+.navbar-brand img {
+    height: 60px;
+}
+
+/* CHAT OVERLAY SEGRETERIA */
+.chat-overlay-segreteria {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+    background: white;
+    border-left: 3px solid var(--cnf-blu-medio);
+    box-shadow: -5px 0 15px rgba(13, 59, 92, 0.2);
+    z-index: 9999;
+}
+
+/* CARD E BOTTONI */
+.card {
+    border: 1px solid var(--cnf-blu-chiaro);
+    border-radius: 8px;
+}
+
+.card-header {
+    background-color: var(--cnf-grigio-chiaro);
+    border-bottom: 1px solid var(--cnf-blu-chiaro);
+}
+
+/* BOTTONI ANAGRAFICA */
+.btn-outline-primary {
+    border-color: var(--cnf-blu-medio);
+    color: var(--cnf-blu-medio);
+}
+
+    .btn-outline-primary:hover {
+        background-color: var(--cnf-blu-medio);
+        border-color: var(--cnf-blu-medio);
+    }

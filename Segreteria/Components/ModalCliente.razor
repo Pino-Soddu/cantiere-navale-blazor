@@ -1,0 +1,259 @@
+﻿@using CNP.Segreteria.Models
+
+<div class="modal @(Mostra ? "d-block" : "d-none")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <!-- HEADER COMPATTO -->
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title fs-6">
+                    @(Cliente.ClienteID > 0 ? "Modifica Cliente" : "Nuovo Cliente")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModal"></button>
+            </div>
+
+            <div class="modal-body py-2">
+                <div class="container-fluid">
+                    <!-- CODICE CLIENTE COMPATTO -->
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label fw-bold small">Codice Cliente</label>
+                                <input class="form-control form-control-sm bg-light"
+                                       value="@Cliente.CodiceCliente"
+                                       disabled />
+                                <small class="form-text text-muted">Codice automatico</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PRIMA RIGA - DATI PRINCIPALI COMPATTI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 1 - DATI ANAGRAFICI COMPATTA -->
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-2">
+                                <div class="card-header bg-primary text-white py-1">
+                                    <h6 class="mb-0 small">📋 Dati Anagrafici</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold small">Ragione Sociale *</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.RagioneSociale" />
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Tipo Cliente</label>
+                                                <select class="form-select form-select-sm" @bind="Cliente.TipoCliente">
+                                                    <option value="">Seleziona tipo</option>
+                                                    <option value="Privato">Privato</option>
+                                                    <option value="Azienda">Azienda</option>
+                                                    <option value="Noleggiatore">Noleggiatore</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Ruolo Contatto</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.RuoloContatto" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Nome Contatto</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.NomeContatto" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 2 - CONTATTI COMPATTA -->
+                        <div class="col-md-6">
+                            <div class="card border-success mb-2">
+                                <div class="card-header bg-success text-white py-1">
+                                    <h6 class="mb-0 small">📞 Contatti</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f0fff0;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Indirizzo</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.Indirizzo" />
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Comune</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.Comune" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small">CAP</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.CAP" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Provincia</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.SiglaProvincia" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-1">
+                                                <label class="form-label small">Telefono</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.Telefono" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-1">
+                                                <label class="form-label small">Email</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.Email" type="email" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECONDA RIGA - DATI FISCALI E COMMERCIALI COMPATTI -->
+                    <div class="row g-2">
+                        <!-- SCHEDA 3 - DATI FISCALI COMPATTA -->
+                        <div class="col-md-6">
+                            <div class="card border-warning mb-2">
+                                <div class="card-header bg-warning text-dark py-1">
+                                    <h6 class="mb-0 small">💰 Dati Fiscali</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #fffaf0;">
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Partita IVA</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.PartitaIVA" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label small">Codice Fiscale</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.CodiceFiscale" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">IBAN</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.IBAN" />
+                                    </div>
+
+                                    <div class="mb-1">
+                                        <label class="form-label small">Banca Riferimento</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.BancaRiferimento" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA 4 - DATI COMMERCIALI COMPATTA -->
+                        <div class="col-md-6">
+                            <div class="card border-info mb-2">
+                                <div class="card-header bg-info text-white py-1">
+                                    <h6 class="mb-0 small">📊 Dati Commerciali</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f8f8ff;">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Tipologia Servizi</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.TipologiaServizi" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Porto Riferimento</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.PortoRiferimento" />
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small">Termini Pagamento</label>
+                                        <input class="form-control form-control-sm" @bind="Cliente.TerminiPagamento" />
+                                    </div>
+
+                                    <div class="row g-1">
+                                        <div class="col-md-6">
+                                            <div class="mb-1">
+                                                <label class="form-label small">Data Primo Contatto</label>
+                                                <input class="form-control form-control-sm" @bind="Cliente.DataPrimoContatto" type="date" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-1">
+                                                <label class="form-label small">Valutazione Cliente</label>
+                                                <select class="form-select form-select-sm" @bind="Cliente.ValutazioneCliente">
+                                                    <option value="">Seleziona</option>
+                                                    <option value="A - Ottimo">A - Ottimo</option>
+                                                    <option value="B - Buono">B - Buono</option>
+                                                    <option value="C - Normale">C - Normale</option>
+                                                    <option value="D - Attenzione">D - Attenzione</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SCHEDA 5 - NOTE (DIMENSIONE ORIGINALE) -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-secondary mb-1">
+                                <div class="card-header bg-secondary text-white py-1">
+                                    <h6 class="mb-0 small">📝 Note</h6>
+                                </div>
+                                <div class="card-body p-2" style="background-color: #f8f9fa;">
+                                    <textarea class="form-control" rows="3" @bind="Cliente.Note"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER COMPATTO -->
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ChiudiModal">
+                    Annulla
+                </button>
+                <button type="button" class="btn btn-success btn-sm" @onclick="SalvaCliente">
+                    💾 Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Mostra { get; set; }
+
+    [Parameter]
+    public Cliente Cliente { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnChiudi { get; set; }
+
+    [Parameter]
+    public EventCallback<Cliente> OnSalva { get; set; }
+
+    private async Task ChiudiModal()
+    {
+        await OnChiudi.InvokeAsync();
+    }
+
+    private async Task SalvaCliente()
+    {
+        await OnSalva.InvokeAsync(Cliente);
+        await ChiudiModal();
+    }
+}

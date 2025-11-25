@@ -1,0 +1,924 @@
+﻿@page "/segreteria"
+@layout LayoutSegreteria
+@using CNP.Segreteria.Models
+@using CNP.Segreteria.Services
+@using CNP.Segreteria.Components
+@inject AnagraficheService AnagraficheService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Segreteria - Cantiere Navale Fulghesu</PageTitle>
+
+<!-- HEADER COERENTE CON HOMEPAGE -->
+<header class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3">
+    <div class="container-fluid">
+        <!-- LOGO -->
+        <a class="navbar-brand" href="/">
+            <img src="/Immagini/logo2.png" alt="Cantiere Navale Fulghesu Sa Perdixedda">
+        </a>
+
+        <!-- TITOLO AREA SEGRETERIA AL CENTRO -->
+        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-center">
+            <div class="navbar-nav">
+                <span class="nav-link text-dark fw-bold fs-4">Area Segreteria</span>
+            </div>
+        </div>
+
+        <!-- PULSANTE CHAT A DESTRA -->
+        <div class="d-flex">
+            <button class="btn btn-outline-primary">
+                💬 Assistente
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENUTO PRINCIPALE -->
+<div class="container-fluid">
+
+    <!-- SELEZIONE ANAGRAFICA COMPATTA -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-start align-items-center py-2">
+                    <h5 class="mb-0 me-5">Seleziona Anagrafica da Gestire</h5>
+                    <div class="d-flex gap-2">
+                        @foreach (var tipo in tipiAnagrafica)
+                        {
+                            <button class="btn btn-sm @(tipoSelezionato == tipo ? "btn-primary" : "btn-outline-primary")"
+                                    @onclick="() => SelezionaTipo(tipo)">
+                                @GetIconaTipo(tipo) @tipo
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRIGLIA DATI -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <h5 class="mb-0">@tipoSelezionato</h5>
+                    <div class="card-header-actions">
+                        <!-- BARRA RICERCA -->
+                        <div class="header-ricerca">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">🔍</span>
+                                <input type="text" class="form-control" placeholder="Cerca..."
+                                       value="@testoRicercaGlobale" @oninput="OnTestoRicercaChanged" />
+                            </div>
+                        </div>
+
+                        <!-- CONTATORE -->
+                        <span class="counter-badge">
+                            @if (string.IsNullOrEmpty(testoRicercaGlobale))
+                            {
+                                <text>@GetCountDati()</text>
+                            }
+                            else
+                            {
+                                <text>@GetCountFiltrati()/@GetCountDati()</text>
+                            }
+                        </span>
+
+                        <!-- PULSANTI -->
+                        <button class="btn btn-sm btn-success" @onclick="ApriModalCorrente">
+                            ＋ Nuovo
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary">
+                            📁 Esporta
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if (caricamentoInCorso)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Caricamento...</span>
+                            </div>
+                            <p class="mt-2">Caricamento dati in corso...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (tipoSelezionato == "Clienti")
+                        {
+                            <GrigliaClienti Clienti="@datiClientiFiltrati"
+                                            OnModificaCliente="ApriModalModificaCliente"
+                                            OnEliminaCliente="EliminaCliente"
+                                            AltezzaGriglia="@AltezzaGrigliaCalcolata"
+                                            ClienteEvidenziato="@clienteEvidenziato" />
+                        }
+                        else if (tipoSelezionato == "Fornitori")
+                        {
+                            <GrigliaFornitori Fornitori="@datiFornitoriFiltrati"
+                                              OnModificaFornitore="ApriModalModificaFornitore"
+                                              OnEliminaFornitore="EliminaFornitore"
+                                              AltezzaGriglia="@AltezzaGrigliaCalcolata"
+                                              FornitoreEvidenziato="@fornitoreEvidenziato" />
+                        }
+                        else if (tipoSelezionato == "Materiali")
+                        {
+                            <GrigliaMateriali Materiali="@datiMaterialiFiltrati"
+                                              OnModificaMateriale="ApriModalModificaMateriale"
+                                              OnEliminaMateriale="EliminaMateriale"
+                                              AltezzaGriglia="@AltezzaGrigliaCalcolata"
+                                              MaterialeEvidenziato="@materialeEvidenziato" />
+                        }
+                        else if (tipoSelezionato == "Imbarcazioni")
+                        {
+                            <GrigliaImbarcazioni Imbarcazioni="@datiImbarcazioniFiltrati"
+                                                 OnModificaImbarcazione="ApriModalModificaImbarcazione"
+                                                 OnEliminaImbarcazione="EliminaImbarcazione"
+                                                 AltezzaGriglia="@AltezzaGrigliaCalcolata"
+                                                 ImbarcazioneEvidenziata="@imbarcazioneEvidenziata" />
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ModalCliente Mostra="modalClienteAperta"
+              Cliente="clienteSelezionato"
+              OnChiudi="ChiudiModalCliente"
+              OnSalva="SalvaCliente" />
+
+<ModalFornitore Mostra="modalFornitoreAperta"
+                Fornitore="fornitoreSelezionato"
+                OnChiudi="ChiudiModalFornitore"
+                OnSalva="SalvaFornitore" />
+
+<ModalImbarcazione Mostra="modalImbarcazioneAperta"
+                   Imbarcazione="imbarcazioneSelezionata"
+                   Clienti="datiClienti"
+                   OnChiudi="ChiudiModalImbarcazione"
+                   OnSalva="SalvaImbarcazione" />
+
+<ModalMateriale Mostra="modalMaterialeAperta"
+                Materiale="materialeSelezionato"
+                OnChiudi="ChiudiModalMateriale"
+                OnSalva="SalvaMateriale" />
+
+@code {
+    private string[] tipiAnagrafica = new[] { "Clienti", "Fornitori", "Materiali", "Imbarcazioni" };
+    private string tipoSelezionato = "Clienti";
+    private bool caricamentoInCorso = false;
+
+    private List<Cliente> datiClienti = new();
+    private List<Fornitore> datiFornitori = new();
+    private List<Materiale> datiMateriali = new();
+    private List<Imbarcazione> datiImbarcazioni = new();
+
+    private string testoRicercaGlobale = string.Empty;
+    private List<Cliente> datiClientiFiltrati = new();
+    private List<Fornitore> datiFornitoriFiltrati = new();
+    private List<Materiale> datiMaterialiFiltrati = new();
+    private List<Imbarcazione> datiImbarcazioniFiltrati = new();
+
+    // ALTEZZA DINAMICA GRIGLIA
+    private string AltezzaGrigliaCalcolata => "calc(100vh - 220px)";
+
+    // GESTIONE EVIDENZIAZIONE
+    private Cliente? clienteEvidenziato = null;
+    private System.Timers.Timer? timerEvidenziazione;
+
+    #region ----- Metodi Comuni -----
+
+    private void ApriModalCorrente()
+    {
+        switch (tipoSelezionato)
+        {
+            case "Clienti":
+                ApriModalNuovo();
+                break;
+            case "Fornitori":
+                ApriModalNuovoFornitore();
+                break;
+            case "Materiali":
+                ApriModalNuovoMateriale();
+                break;
+            case "Imbarcazioni":
+                ApriModalNuovaImbarcazione();
+                break;
+        }
+    }
+
+    private string GetIconaTipo(string tipo)
+    {
+        return tipo switch
+        {
+            "Clienti" => "👥",
+            "Fornitori" => "🏢",
+            "Materiali" => "📦",
+            "Imbarcazioni" => "⛵",
+            _ => "📄"
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaDatiClienti();
+        datiClientiFiltrati = datiClienti;
+    }
+
+    public void Dispose()
+    {
+        timerEvidenziazione?.Dispose();
+    }
+    #endregion
+
+    #region GESTIONE MODALE CLIENTI
+    private bool modalClienteAperta = false;
+    private Cliente clienteSelezionato = new();
+
+    private void ApriModalNuovo()
+    {
+        clienteSelezionato = new Cliente
+        {
+            ClienteID = 0,
+            CodiceCliente = (datiClienti.Any() ? datiClienti.Max(c => c.CodiceCliente) + 1 : 1),
+            RagioneSociale = string.Empty
+        };
+        modalClienteAperta = true;
+        StateHasChanged();
+    }
+
+    private void ApriModalModificaCliente(Cliente cliente)
+    {
+        clienteSelezionato = new Cliente
+        {
+            ClienteID = cliente.ClienteID,
+            CodiceCliente = cliente.CodiceCliente,
+            RagioneSociale = cliente.RagioneSociale,
+            TipoCliente = cliente.TipoCliente,
+            NomeContatto = cliente.NomeContatto,
+            RuoloContatto = cliente.RuoloContatto,
+            Indirizzo = cliente.Indirizzo,
+            Comune = cliente.Comune,
+            CAP = cliente.CAP,
+            SiglaProvincia = cliente.SiglaProvincia,
+            Telefono = cliente.Telefono,
+            Email = cliente.Email,
+            PartitaIVA = cliente.PartitaIVA,
+            CodiceFiscale = cliente.CodiceFiscale,
+            IBAN = cliente.IBAN,
+            BancaRiferimento = cliente.BancaRiferimento,
+            TipologiaServizi = cliente.TipologiaServizi,
+            PortoRiferimento = cliente.PortoRiferimento,
+            TerminiPagamento = cliente.TerminiPagamento,
+            DataPrimoContatto = cliente.DataPrimoContatto,
+            ValutazioneCliente = cliente.ValutazioneCliente,
+            Note = cliente.Note
+        };
+        modalClienteAperta = true;
+        StateHasChanged();
+    }
+
+    private void ChiudiModalCliente()
+    {
+        modalClienteAperta = false;
+        clienteSelezionato = new Cliente();
+        StateHasChanged();
+    }
+
+    private async Task SalvaCliente(Cliente cliente)
+    {
+        bool successo = false;
+
+        if (cliente.ClienteID == 0)
+        {
+            successo = await AnagraficheService.AggiungiCliente(cliente);
+        }
+        else
+        {
+            successo = await AnagraficheService.ModificaCliente(cliente);
+        }
+
+        if (successo)
+        {
+            // ⚠️ MODIFICA: Ricarica TUTTI i dati invece di solo i clienti
+            await RicaricaTuttiIDati();
+
+            // ... resto del codice evidenziazione ...
+
+            ChiudiModalCliente();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante il salvataggio del cliente");
+        }
+    }
+
+    private async Task EliminaCliente(Cliente cliente)
+    {
+        // ⚠️ CONTROLLA SE IL CLIENTE HA IMBARCAZIONI ASSOCIATE
+        int numeroImbarcazioni = await AnagraficheService.ContaImbarcazioniCliente(cliente.ClienteID);
+
+        string messaggioConferma;
+
+        if (numeroImbarcazioni > 0)
+        {
+            messaggioConferma = $"⚠️ ATTENZIONE: ELIMINAZIONE IMBARCAZIONI\n\n" +
+                               $"Il cliente {cliente.RagioneSociale} ha {numeroImbarcazioni} imbarcazione/i associate.\n\n" +
+                               $"Eliminando il cliente, verranno cancellate **anche tutte le sue imbarcazioni**.\n\n" +
+                               $"Questa operazione non può essere annullata.\n\n" +
+                               $"Procedere comunque?";
+        }
+        else
+        {
+            messaggioConferma = $"Sei sicuro di voler eliminare il cliente {cliente.RagioneSociale}?";
+        }
+
+        var conferma = await JSRuntime.InvokeAsync<bool>("confirm", messaggioConferma);
+        if (!conferma) return;
+
+        // ⚠️ ESEGUI L'ELIMINAZIONE A CASCATA
+        var risultato = await AnagraficheService.EliminaCliente(cliente.ClienteID);
+
+        if (risultato)
+        {
+            // RICARICA TUTTI I DATI PER AGGIORNARE L'INTERFACCIA
+            await RicaricaTuttiIDati();
+
+            // MESSAGGIO DI SUCCESSO
+            if (numeroImbarcazioni > 0)
+            {
+                await JSRuntime.InvokeVoidAsync("alert",
+                    $"✅ Cliente e {numeroImbarcazioni} imbarcazione/i eliminate con successo");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "✅ Cliente eliminato con successo");
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "❌ Errore durante l'eliminazione del cliente");
+        }
+    }
+    #endregion
+
+    #region GESTIONE MODALE FORNITORI
+    private bool modalFornitoreAperta = false;
+    private Fornitore fornitoreSelezionato = new();
+    private Fornitore? fornitoreEvidenziato = null;
+
+    private void ApriModalNuovoFornitore()
+    {
+        fornitoreSelezionato = new Fornitore
+        {
+            FornitoreID = 0,
+            RagioneSociale = string.Empty
+        };
+        modalFornitoreAperta = true;
+        StateHasChanged();
+    }
+
+    private void ApriModalModificaFornitore(Fornitore fornitore)
+    {
+        fornitoreSelezionato = new Fornitore
+        {
+            FornitoreID = fornitore.FornitoreID,
+            RagioneSociale = fornitore.RagioneSociale,
+            Indirizzo = fornitore.Indirizzo,
+            Telefono = fornitore.Telefono,
+            Email = fornitore.Email,
+            PartitaIVA = fornitore.PartitaIVA,
+            CodiceSDI = fornitore.CodiceSDI,
+            Note = fornitore.Note
+        };
+        modalFornitoreAperta = true;
+        StateHasChanged();
+    }
+
+    private void ChiudiModalFornitore()
+    {
+        modalFornitoreAperta = false;
+        fornitoreSelezionato = new Fornitore();
+        StateHasChanged();
+    }
+
+    private async Task SalvaFornitore(Fornitore fornitore)
+    {
+        bool successo = false;
+
+        if (fornitore.FornitoreID == 0)
+        {
+            successo = await AnagraficheService.AggiungiFornitore(fornitore);
+        }
+        else
+        {
+            successo = await AnagraficheService.ModificaFornitore(fornitore);
+        }
+
+        if (successo)
+        {
+            // PRIMA ricarica i dati
+            await CaricaDatiFornitori();
+            FiltraDati();
+
+            // POI trova e evidenzia il fornitore aggiornato
+            var fornitoreAggiornato = datiFornitori.FirstOrDefault(f =>
+                f.FornitoreID == fornitore.FornitoreID ||
+                f.RagioneSociale == fornitore.RagioneSociale);
+
+            if (fornitoreAggiornato != null)
+            {
+                fornitoreEvidenziato = fornitoreAggiornato;
+                StateHasChanged();
+
+                // Timer per rimuovere evidenziazione
+                if (timerEvidenziazione != null)
+                {
+                    timerEvidenziazione.Dispose();
+                }
+
+                timerEvidenziazione = new System.Timers.Timer(2000);
+                timerEvidenziazione.Elapsed += (s, e) =>
+                {
+                    fornitoreEvidenziato = null;
+                    InvokeAsync(StateHasChanged);
+                    timerEvidenziazione.Dispose();
+                };
+                timerEvidenziazione.AutoReset = false;
+                timerEvidenziazione.Start();
+            }
+
+            // Chiudi il modale
+            ChiudiModalFornitore();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante il salvataggio del fornitore");
+        }
+    }
+
+    private async Task EliminaFornitore(Fornitore fornitore)
+    {
+        var conferma = await JSRuntime.InvokeAsync<bool>("confirm", $"Sei sicuro di voler eliminare il fornitore {fornitore.RagioneSociale}?");
+        if (!conferma) return;
+
+        var risultato = await AnagraficheService.EliminaFornitore(fornitore.FornitoreID);
+        if (risultato)
+        {
+            await CaricaDatiFornitori();
+            FiltraDati();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante l'eliminazione del fornitore");
+        }
+    }
+    #endregion
+
+    #region GESTIONE MODALE IMBARCAZIONI
+    private bool modalImbarcazioneAperta = false;
+    private Imbarcazione imbarcazioneSelezionata = new();
+    private Imbarcazione? imbarcazioneEvidenziata = null;
+
+    private void ApriModalNuovaImbarcazione()
+    {
+        imbarcazioneSelezionata = new Imbarcazione
+        {
+            ID_Imbarcazione = 0,
+            Nome_Imbarcazione = string.Empty
+        };
+        modalImbarcazioneAperta = true;
+        StateHasChanged();
+    }
+
+    private void ApriModalModificaImbarcazione(Imbarcazione imbarcazione)
+    {
+        imbarcazioneSelezionata = new Imbarcazione
+        {
+            ID_Imbarcazione = imbarcazione.ID_Imbarcazione,
+            Nome_Imbarcazione = imbarcazione.Nome_Imbarcazione,
+            ID_Tipo = imbarcazione.ID_Tipo,
+            ID_Cliente = imbarcazione.ID_Cliente,
+            Anno_Costruzione = imbarcazione.Anno_Costruzione,
+            Lunghezza = imbarcazione.Lunghezza,
+            Larghezza = imbarcazione.Larghezza,
+            Pescaggio_FB = imbarcazione.Pescaggio_FB,
+            Pescaggio_EB = imbarcazione.Pescaggio_EB,
+            Peso = imbarcazione.Peso,
+            Materiale_Scafo = imbarcazione.Materiale_Scafo,
+            Data_Acquisto = imbarcazione.Data_Acquisto,
+            Stato = imbarcazione.Stato,
+            PortoAttracco = imbarcazione.PortoAttracco,
+            Note = imbarcazione.Note
+        };
+        modalImbarcazioneAperta = true;
+        StateHasChanged();
+    }
+
+    private void ChiudiModalImbarcazione()
+    {
+        modalImbarcazioneAperta = false;
+        imbarcazioneSelezionata = new Imbarcazione();
+        StateHasChanged();
+    }
+
+    private async Task SalvaImbarcazione(Imbarcazione imbarcazione)
+    {
+        // ⚠️ CONTROLLI PRE-SALVATAGGIO
+        if (string.IsNullOrWhiteSpace(imbarcazione.Nome_Imbarcazione))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Il nome dell'imbarcazione è obbligatorio");
+            return;
+        }
+
+        // CONTROLLO DUPLICATI: stesso nome e stesso cliente
+        bool duplicato = await AnagraficheService.EsisteImbarcazioneDuplicata(
+            imbarcazione.Nome_Imbarcazione,
+            imbarcazione.ID_Cliente,
+            imbarcazione.ID_Imbarcazione
+        );
+
+        if (duplicato)
+        {
+            // Trova il nome del cliente per il messaggio di errore
+            var nomeCliente = datiClienti?.FirstOrDefault(c => c.ClienteID == imbarcazione.ID_Cliente)?.RagioneSociale ?? "il cliente selezionato";
+
+            await JSRuntime.InvokeVoidAsync("alert",
+                $"⚠️ Imbarcazione duplicata!\n\nEsiste già un'imbarcazione con nome '{imbarcazione.Nome_Imbarcazione}' per {nomeCliente}.\n\nUtilizzare un nome diverso o selezionare un altro cliente.");
+            return;
+        }
+
+        // CONTROLLO OPZIONALE: stesso nome globale (anche per clienti diversi)
+        bool stessoNomeGlobale = await AnagraficheService.EsisteImbarcazioneConNome(
+            imbarcazione.Nome_Imbarcazione,
+            imbarcazione.ID_Imbarcazione
+        );
+
+        if (stessoNomeGlobale && imbarcazione.ID_Imbarcazione == 0) // Solo per nuovi inserimenti
+        {
+            var conferma = await JSRuntime.InvokeAsync<bool>("confirm",
+                $"Attenzione: Esiste già un'imbarcazione con nome '{imbarcazione.Nome_Imbarcazione}' nel sistema.\n\nSei sicuro di voler procedere comunque?");
+
+            if (!conferma) return;
+        }
+
+        // ⚠️ PROCEEDI CON IL SALVATAGGIO
+        bool successo = false;
+
+        if (imbarcazione.ID_Imbarcazione == 0)
+        {
+            successo = await AnagraficheService.AggiungiImbarcazione(imbarcazione);
+        }
+        else
+        {
+            successo = await AnagraficheService.ModificaImbarcazione(imbarcazione);
+        }
+
+        if (successo)
+        {
+            // PRIMA ricarica i dati
+            await CaricaDatiImbarcazioni();
+            FiltraDati();
+
+            // POI trova e evidenzia l'imbarcazione aggiornata
+            var imbarcazioneAggiornata = datiImbarcazioni.FirstOrDefault(i =>
+                i.ID_Imbarcazione == imbarcazione.ID_Imbarcazione ||
+                i.Nome_Imbarcazione == imbarcazione.Nome_Imbarcazione);
+
+            if (imbarcazioneAggiornata != null)
+            {
+                imbarcazioneEvidenziata = imbarcazioneAggiornata;
+                StateHasChanged();
+
+                // Timer per rimuovere evidenziazione
+                if (timerEvidenziazione != null)
+                {
+                    timerEvidenziazione.Dispose();
+                }
+
+                timerEvidenziazione = new System.Timers.Timer(2000);
+                timerEvidenziazione.Elapsed += (s, e) =>
+                {
+                    imbarcazioneEvidenziata = null;
+                    InvokeAsync(StateHasChanged);
+                    timerEvidenziazione.Dispose();
+                };
+                timerEvidenziazione.AutoReset = false;
+                timerEvidenziazione.Start();
+            }
+
+            // Chiudi il modale
+            ChiudiModalImbarcazione();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante il salvataggio dell'imbarcazione");
+        }
+    }
+
+    private async Task EliminaImbarcazione(Imbarcazione imbarcazione)
+    {
+        var conferma = await JSRuntime.InvokeAsync<bool>("confirm", $"Sei sicuro di voler eliminare l'imbarcazione {imbarcazione.Nome_Imbarcazione}?");
+        if (!conferma) return;
+
+        var risultato = await AnagraficheService.EliminaImbarcazione(imbarcazione.ID_Imbarcazione);
+        if (risultato)
+        {
+            await CaricaDatiImbarcazioni();
+            FiltraDati();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante l'eliminazione dell'imbarcazione");
+        }
+    }
+    #endregion
+
+    #region GESTIONE MATERIALI
+    private bool modalMaterialeAperta = false;
+    private Materiale materialeSelezionato = new();
+    private Materiale? materialeEvidenziato = null;
+
+    private void ApriModalNuovoMateriale()
+    {
+        materialeSelezionato = new Materiale
+        {
+            IDMateriale = 0,
+            CodiceMateriale = string.Empty
+        };
+        modalMaterialeAperta = true;
+        StateHasChanged();
+    }
+
+    private void ApriModalModificaMateriale(Materiale materiale)
+    {
+        materialeSelezionato = new Materiale
+        {
+            IDMateriale = materiale.IDMateriale,
+            CodiceMateriale = materiale.CodiceMateriale,
+            Descrizione = materiale.Descrizione,
+            UnitaMisura = materiale.UnitaMisura,
+            PrezzoUnitario = materiale.PrezzoUnitario,
+            DataUltimoOrdine = materiale.DataUltimoOrdine,
+            QuantitaDisponibile = materiale.QuantitaDisponibile,
+            QuantitaMinima = materiale.QuantitaMinima,
+            Fornitore = materiale.Fornitore,
+            Note = materiale.Note
+        };
+        modalMaterialeAperta = true;
+        StateHasChanged();
+    }
+
+    private void ChiudiModalMateriale()
+    {
+        modalMaterialeAperta = false;
+        materialeSelezionato = new Materiale();
+        StateHasChanged();
+    }
+
+    private async Task SalvaMateriale(Materiale materiale)
+    {
+        bool successo = false;
+
+        if (materiale.IDMateriale == 0)
+        {
+            successo = await AnagraficheService.AggiungiMateriale(materiale);
+        }
+        else
+        {
+            successo = await AnagraficheService.ModificaMateriale(materiale);
+        }
+
+        if (successo)
+        {
+            // PRIMA ricarica i dati
+            await CaricaDatiMateriali();
+            FiltraDati();
+
+            // POI trova e evidenzia il materiale aggiornato
+            var materialeAggiornato = datiMateriali.FirstOrDefault(m =>
+                m.IDMateriale == materiale.IDMateriale ||
+                m.CodiceMateriale == materiale.CodiceMateriale);
+
+            if (materialeAggiornato != null)
+            {
+                materialeEvidenziato = materialeAggiornato;
+                StateHasChanged();
+
+                // Timer per rimuovere evidenziazione
+                if (timerEvidenziazione != null)
+                {
+                    timerEvidenziazione.Dispose();
+                }
+
+                timerEvidenziazione = new System.Timers.Timer(2000);
+                timerEvidenziazione.Elapsed += (s, e) =>
+                {
+                    materialeEvidenziato = null;
+                    InvokeAsync(StateHasChanged);
+                    timerEvidenziazione.Dispose();
+                };
+                timerEvidenziazione.AutoReset = false;
+                timerEvidenziazione.Start();
+            }
+
+            // Chiudi il modale
+            ChiudiModalMateriale();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante il salvataggio del materiale");
+        }
+    }
+
+    private async Task EliminaMateriale(Materiale materiale)
+    {
+        var conferma = await JSRuntime.InvokeAsync<bool>("confirm", $"Sei sicuro di voler eliminare il materiale {materiale.CodiceMateriale}?");
+        if (!conferma) return;
+
+        var risultato = await AnagraficheService.EliminaMateriale(materiale.IDMateriale);
+        if (risultato)
+        {
+            await CaricaDatiMateriali();
+            FiltraDati();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Errore durante l'eliminazione del materiale");
+        }
+    }
+    #endregion
+
+    #region CARICAMENTO E FILTRAGGIO DATI
+
+    private async Task SelezionaTipo(string tipo)
+    {
+        tipoSelezionato = tipo;
+        caricamentoInCorso = true;
+        StateHasChanged();
+
+        try
+        {
+            // FORZA SEMPRE IL RICARICAMENTO PER AVERE DATI FRESCHI
+            switch (tipo)
+            {
+                case "Clienti":
+                    await CaricaDatiClienti();
+                    break;
+                case "Fornitori":
+                    await CaricaDatiFornitori();
+                    break;
+                case "Materiali":
+                    await CaricaDatiMateriali();
+                    break;
+                case "Imbarcazioni":
+                    await CaricaDatiImbarcazioni();
+                    break;
+            }
+        }
+        finally
+        {
+            caricamentoInCorso = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CaricaDatiClienti()
+    {
+        var clienti = await AnagraficheService.GetClienti();
+
+        // ⚠️ ORDINA PER RAGIONE SOCIALE (CASE INSENSITIVE)
+        datiClienti = clienti
+            .OrderBy(c => c.RagioneSociale, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task CaricaDatiFornitori()
+    {
+        datiFornitori = await AnagraficheService.GetFornitori();
+        FiltraDati();
+    }
+
+    private async Task CaricaDatiMateriali()
+    {
+        datiMateriali = await AnagraficheService.GetMateriali();
+        FiltraDati();
+    }
+
+    private async Task CaricaDatiImbarcazioni()
+    {
+        datiImbarcazioni = await AnagraficheService.GetImbarcazioni();
+
+        // ⚠️ ORDINA PER NOME IMBARCAZIONE (A-Z)
+        datiImbarcazioni = datiImbarcazioni
+            .OrderBy(i => i.Nome_Imbarcazione, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        FiltraDati();
+    }
+
+    private async Task RicaricaDatiCorrenti()
+    {
+        // Ricarica i dati per la sezione corrente
+        switch (tipoSelezionato)
+        {
+            case "Clienti":
+                await CaricaDatiClienti();
+                break;
+            case "Fornitori":
+                await CaricaDatiFornitori();
+                break;
+            case "Materiali":
+                await CaricaDatiMateriali();
+                break;
+            case "Imbarcazioni":
+                await CaricaDatiImbarcazioni();
+                break;
+        }
+        FiltraDati();
+    }
+
+    private async Task RicaricaTuttiIDati()
+    {
+        // Ricarica tutti i dati per evitare problemi di consistenza
+        await CaricaDatiClienti();
+        await CaricaDatiFornitori();
+        await CaricaDatiMateriali();
+        await CaricaDatiImbarcazioni();
+        FiltraDati();
+    }
+
+    private void FiltraDati()
+    {
+        if (string.IsNullOrWhiteSpace(testoRicercaGlobale))
+        {
+            datiClientiFiltrati = datiClienti;
+            datiFornitoriFiltrati = datiFornitori;
+            datiMaterialiFiltrati = datiMateriali;
+            datiImbarcazioniFiltrati = datiImbarcazioni;
+            return;
+        }
+
+        var termine = testoRicercaGlobale.Trim().ToLower();
+
+        datiClientiFiltrati = datiClienti?.Where(c =>
+            (c.RagioneSociale?.ToLower().Contains(termine) == true) ||
+            (c.NomeContatto?.ToLower().Contains(termine) == true) ||
+            (c.Telefono?.Contains(termine) == true) ||
+            (c.Email?.ToLower().Contains(termine) == true) ||
+            (c.Comune?.ToLower().Contains(termine) == true)
+        ).ToList() ?? new List<Cliente>();
+
+        datiFornitoriFiltrati = datiFornitori?.Where(f =>
+            (f.RagioneSociale?.ToLower().Contains(termine) == true) ||
+            (f.Indirizzo?.ToLower().Contains(termine) == true) ||
+            (f.Telefono?.Contains(termine) == true) ||
+            (f.Email?.ToLower().Contains(termine) == true)
+        ).ToList() ?? new List<Fornitore>();
+
+        datiMaterialiFiltrati = datiMateriali?.Where(m =>
+            (m.CodiceMateriale?.ToLower().Contains(termine) == true) ||
+            (m.Descrizione?.ToLower().Contains(termine) == true) ||
+            (m.Fornitore?.ToLower().Contains(termine) == true)
+        ).ToList() ?? new List<Materiale>();
+
+        datiImbarcazioniFiltrati = datiImbarcazioni?.Where(i =>
+            (i.Nome_Imbarcazione?.ToLower().Contains(termine) == true) ||
+            (i.Materiale_Scafo?.ToLower().Contains(termine) == true) ||
+            (i.PortoAttracco?.ToLower().Contains(termine) == true)
+        ).ToList() ?? new List<Imbarcazione>();
+    }
+
+    private int GetCountDati()
+    {
+        return tipoSelezionato switch
+        {
+            "Clienti" => datiClienti?.Count ?? 0,
+            "Fornitori" => datiFornitori?.Count ?? 0,
+            "Materiali" => datiMateriali?.Count ?? 0,
+            "Imbarcazioni" => datiImbarcazioni?.Count ?? 0,
+            _ => 0
+        };
+    }
+
+    private int GetCountFiltrati()
+    {
+        return tipoSelezionato switch
+        {
+            "Clienti" => datiClientiFiltrati?.Count ?? 0,
+            "Fornitori" => datiFornitoriFiltrati?.Count ?? 0,
+            "Materiali" => datiMaterialiFiltrati?.Count ?? 0,
+            "Imbarcazioni" => datiImbarcazioniFiltrati?.Count ?? 0,
+            _ => 0
+        };
+    }
+
+    private void OnTestoRicercaChanged(ChangeEventArgs e)
+    {
+        testoRicercaGlobale = e.Value?.ToString() ?? string.Empty;
+        FiltraDati();
+    }
+    #endregion
+
+}

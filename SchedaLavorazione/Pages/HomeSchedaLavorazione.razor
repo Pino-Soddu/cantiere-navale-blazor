@@ -1,0 +1,1246 @@
+﻿@page "/schedalavorazione"
+@layout LayoutSchedaLavorazione
+@using Microsoft.AspNetCore.Components.Web
+@using CNP.SchedaLavorazione.Services
+@using CNP.SchedaLavorazione.Models
+@using CNP.Segreteria.Models
+@inject PreventiviService PreventiviService
+
+<PageTitle>Scheda Lavorazione - Cantiere Navale Fulghesu</PageTitle>
+
+<style>
+    /* =========== FONT =========== */
+    * {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* =========== HEADER PRINCIPALE =========== */
+    .header-cruscotto {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        padding: 1rem;
+        margin: -1rem -1rem 1.5rem -1rem;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-cruscotto {
+        height: 50px;
+        width: auto;
+        filter: brightness(0) invert(1);
+    }
+
+    .titolo-cruscotto {
+        color: white;
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 600;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* =========== CONTENITORE PRINCIPALE =========== */
+    .contenitore-schede {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0 1rem 0 1rem;
+        margin-top: 2rem;
+    }
+
+    /* =========== RIGA SCHEDA COMPATTA =========== */
+    .riga-scheda-compatta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid #dee2e6;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .riga-scheda-compatta:hover {
+            background: #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+    .icona-espansione {
+        font-size: 14px;
+        width: 16px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .nome-barca {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        white-space: nowrap;
+        min-width: 180px;
+        flex-shrink: 0;
+    }
+
+    .stato-scheda {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .barra-progresso {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        min-width: 100px;
+        max-width: 200px;
+    }
+
+    .riempimento-barra {
+        height: 100%;
+        background: linear-gradient(90deg, #0d6efd 0%, #0a58ca 100%);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .contatore-progresso {
+        font-size: 12px;
+        color: #6c757d;
+        white-space: nowrap;
+        min-width: 80px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    /* =========== STATI E COLORI =========== */
+    .stato-da-iniziare {
+        background: #6c757d;
+        color: white;
+    }
+
+    .stato-in-corso {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .stato-completata {
+        background: #198754;
+        color: white;
+    }
+
+    /* =========== RIGA ATTIVITÀ COMPATTA =========== */
+    .riga-attivita-compatta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 8px 8px 40px; /* ← LEFT PADDING PER INDENTAZIONE */
+        margin-left: 20px; /* ← ULTERIORE INDENTAZIONE */
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        margin-bottom: 6px;
+    }
+
+
+    /* Linea di connessione visiva - CODICE ESATTO DAL CRUSCOTTO */
+    .riga-attivita-compatta {
+        position: relative;
+    }
+
+        .riga-attivita-compatta::before {
+            content: "";
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 16px;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+
+    .descrizione-attivita {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .descrizione-principale {
+        font-size: 14px;
+        color: #2d3748;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .materiale-attivita {
+        font-size: 11px;
+        color: #6c757d;
+        font-style: italic;
+        background: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 4px;
+        display: inline-block;
+    }
+
+    .stato-attivita {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* =========== ANIMAZIONI =========== */
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            max-height: 0;
+            margin-bottom: 0;
+        }
+
+        to {
+            opacity: 1;
+            max-height: 500px;
+            margin-bottom: 6px;
+        }
+    }
+
+    .contenitore-attivita {
+        animation: slideDown 0.3s ease;
+        overflow: hidden;
+        padding-left: 28px;
+    }
+
+    /* =========== RIGA GRUPPO ATTIVITÀ =========== */
+    .riga-attivita-gruppo {
+        cursor: pointer;
+        background: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding: 8px 12px;
+        margin: 5px 0;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .riga-attivita-gruppo:hover {
+            background: #e9ecef;
+        }
+
+    .nome-attivita {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+        flex: 1;
+    }
+
+    .contatore-voci {
+        font-size: 12px;
+        color: #6c757d;
+        white-space: nowrap;
+        min-width: 80px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+
+    /* COLONNE LAYOUT */
+    .colonna-stato-azione {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .colonna-voce {
+        flex: 0 0 20%; /* ← SOLO QUESTA MODIFICA */
+        min-width: 0;
+        word-wrap: break-word;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+    .voce-attivita {
+        font-weight: 500;
+        color: #2d3748;
+        line-height: 1.3;
+        font-size: 14px;
+    }
+
+    .materiale-attivita {
+        font-size: 11px;
+        color: #6c757d;
+        font-style: italic;
+        margin-top: 2px;
+    }
+
+    /* Colonna Operatore - CODICE ESATTO DAL CRUSCOTTO */
+    .colonna-operatore {
+        flex: 0 0 10%; /* Larghezza fissa */
+        min-width: 0;
+        font-size: 14px;
+        background: #f8f9fa;
+    }
+
+
+    .nome-operatore {
+        font-size: 14px;
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+    .operatore-vuoto {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .colonna-tempi {
+        min-width: 200px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .colonna-tempi {
+        flex: 0 0 20%;
+        min-width: 280px; /* ← LARGHEZZA MINIMA ANCHE VUOTA */
+        font-size: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center; /* ← CENTRATURA ORIZZONTALE */
+        border-radius: 4px;
+        padding: 4px;
+    }
+
+    /* Container data/ora su due righe - CODICE ESATTO */
+    .data-ora-inizio,
+    .data-ora-fine,
+    .ore-impiegate {
+        font-size: 14px;
+        text-align: center;
+        line-height: 1.2;
+        width: 100px; /* Larghezza fissa */
+        min-width: 100px; /* Minimum width */
+        max-width: 100px; /* Maximum width */
+        padding: 4px 2px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .tempo-vuoto {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* =========== EMOJI STATO =========== */
+    .emoji-stato {
+        font-size: 16px;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    /* =========== RESPONSIVE =========== */
+    @@media (max-width: 768px) {
+        .riga-scheda-compatta {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .nome-barca {
+            min-width: 140px;
+            font-size: 18px;
+        }
+
+        .barra-progresso {
+            min-width: 80px;
+            max-width: 120px;
+            height: 12px;
+        }
+
+        .contenitore-attivita {
+            padding-left: 20px;
+        }
+    }
+
+    /* =========== UTILITY =========== */
+    .text-center {
+        text-align: center !important;
+    }
+
+    .py-2 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    .ms-2 {
+        margin-left: 0.5rem !important;
+    }
+
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    /* =========== PULSANTI AZIONE =========== */
+
+    /* Container pulsanti */
+    .container-azioni {
+        display: flex;
+        gap: 6px;
+    }
+
+    /* Pulsante base - SPECIFICITÀ MASSIMA */
+    button.btn-azione {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: none;
+        border-radius: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        color: white;
+        min-width: 60px;
+        transition: all 0.2s ease;
+    }
+
+        /* Pulsante Inizia */
+        button.btn-azione.btn-inizia {
+            background: #0d6efd;
+        }
+
+            button.btn-azione.btn-inizia:hover {
+                background: #0b5ed7;
+            }
+
+        /* Pulsante Sospendi */
+        button.btn-azione.btn-sospendi {
+            background: #fd7e14;
+        }
+
+            button.btn-azione.btn-sospendi:hover {
+                background: #e66a00;
+            }
+
+        /* Pulsante Completa */
+        button.btn-azione.btn-completa {
+            background: #198754;
+        }
+
+            button.btn-azione.btn-completa:hover {
+                background: #157347;
+            }
+
+        /* Pulsante Riprendi */
+        button.btn-azione.btn-riprendi {
+            background: #0dcaf0;
+        }
+
+            button.btn-azione.btn-riprendi:hover {
+                background: #0baccc;
+            }
+
+        /* Pulsante Secondario */
+        button.btn-azione.btn-secondario {
+            background: #6c757d;
+        }
+
+            button.btn-azione.btn-secondario:hover {
+                background: #5c636a;
+            }
+
+    /* =========== MODAL OVERLAY UNIFICATI =========== */
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        min-width: 300px;
+        max-width: 500px;
+        width: 90%;
+    }
+
+    .textarea-motivazione {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: inherit;
+        margin-bottom: 15px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 15px;
+    }
+
+    .select-operatore {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-family: inherit;
+    }
+
+</style>
+
+<!-- HEADER COERENTE CON SEGRETERIA -->
+<header class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3">
+    <div class="container-fluid">
+        <!-- LOGO -->
+        <a class="navbar-brand" href="/">
+            <img src="/Immagini/logo2.png" alt="Cantiere Navale Fulghesu Sa Perdixedda">
+        </a>
+
+        <!-- TITOLO AREA SCHEDA LAVORAZIONE AL CENTRO -->
+        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-center">
+            <div class="navbar-nav">
+                <span class="nav-link text-dark fw-bold fs-4">Area Scheda Lavorazione</span>
+            </div>
+        </div>
+
+        <!-- PULSANTE ASSISTENTE A DESTRA -->
+        <div class="d-flex">
+            <button class="btn btn-outline-primary">
+                💬 Assistente
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENUTO PRINCIPALE -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Schede Lavorazione Attive</h5>
+                </div>
+
+                <div class="card-body p-0" style="height: calc(100vh - 150px); overflow-y: auto;">
+                    @if (_riepilogo == null)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Caricamento...</span>
+                            </div>
+                            <p class="mt-2">Caricamento schede lavorazione...</p>
+                        </div>
+                    }
+                    else if (!_riepilogo.Any())
+                    {
+                        <div class="text-center py-4">
+                            <div class="alert alert-info m-0">
+                                <i class="bi bi-info-circle"></i> Nessuna scheda lavorazione attiva trovata.
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="contenitore-schede">
+                            @foreach (var schedaLav in _riepilogo)
+                            {
+                                <!-- Riga compatta scheda lavorazione -->
+                                <div class="riga-scheda-compatta" @onclick="() => ToggleEspansione(schedaLav)">
+                                    <span class="icona-espansione">
+                                        @if (schedaLav.IsExpanded)
+                                        {
+                                            <text>▼</text>
+                                        }
+                                        else
+                                        {
+                                            <text>▶</text>
+                                        }
+                                    </span>
+
+                                    <span class="nome-barca">@schedaLav.NomeBarca</span>
+
+                                    <!-- SOLO EMOJI - COME NEL CRUSCOTTO ORIGINALE -->
+                                    <span class="stato-scheda">
+                                        <span class="emoji-stato">@GetEmojiStato(schedaLav.StatoGenerale)</span>
+                                    </span>
+
+                                    <!-- BARRA PROGRESSO -->
+                                    <div class="barra-progresso">
+                                        @{
+                                            var percentuale = schedaLav.AttivitaTotali > 0
+                                            ? (schedaLav.AttivitaCompletate * 100) / schedaLav.AttivitaTotali
+                                            : 0;
+                                        }
+                                        <div class="riempimento-barra" style="width: @percentuale%"></div>
+                                    </div>
+
+                                    <!-- CONTATORE -->
+                                    <span class="contatore-progresso">
+                                        @schedaLav.AttivitaCompletate/@schedaLav.AttivitaTotali completate
+                                    </span>
+                                </div>
+
+                                <!-- ATTIVITÀ ESPANSE -->
+                                @if (schedaLav.IsExpanded)
+                                {
+                                    <div class="contenitore-attivita">
+                                        @if (_attivitaPerSchedaLav.ContainsKey(schedaLav.PreventivoId))
+                                        {
+                                            var attivitaRaggruppate = _attivitaPerSchedaLav[schedaLav.PreventivoId]
+                                            .GroupBy(a => a.Attivita)
+                                            .Select(g => new
+                                            {
+                                                NomeAttivita = g.Key,
+                                                Voci = g.ToList(),
+                                                Stato = CalcolaStatoAttivita(g.ToList())
+                                            });
+
+                                            @foreach (var gruppo in attivitaRaggruppate)
+                                            {
+                                                var gruppoKey = $"{schedaLav.PreventivoId}-{gruppo.NomeAttivita}";
+                                                var isEspanso = IsGruppoEspanso(gruppoKey);
+
+                                                <!-- RIGA GRUPPO ATTIVITÀ -->
+                                                <div class="riga-attivita-gruppo" @onclick="() => ToggleEspansioneGruppo(gruppoKey)">
+                                                    <span class="icona-espansione">
+                                                        @if (isEspanso)
+                                                        {
+                                                            <text>▼</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>▶</text>
+                                                        }
+                                                    </span>
+                                                    <span class="emoji-stato">@GetEmojiStato(gruppo.Stato)</span>
+                                                    <span class="nome-attivita">@gruppo.NomeAttivita (@gruppo.Voci.Count voci)</span>
+                                                </div>
+
+                                                @if (isEspanso)
+                                                {
+                                                    @foreach (var attivita in gruppo.Voci)
+                                                    {
+                                                        <div class="riga-attivita-compatta">
+                                                            <!-- Colonna Stato + Azione -->
+                                                            <div class="colonna-stato-azione">
+                                                                <span class="emoji-stato">@GetEmojiStato(attivita.Stato)</span>
+
+                                                                @if (attivita.Stato == "Da Iniziare")
+                                                                {
+                                                                    <button @onclick="() => ApriModalInizia((int)attivita.Id, (int)attivita.PreventivoId)"
+                                                                            class="btn-azione btn-inizia">
+                                                                        Inizia
+                                                                    </button>
+                                                                }
+                                                                else if (attivita.Stato == "In Corso")
+                                                                {
+                                                                    <div class="container-azioni">
+                                                                        <button @onclick="@(() => ApriModalSospensione(
+                                                                                                                                                            (int)attivita.Id,
+                                                                                                                                                            (int)attivita.PreventivoId,
+                                                                                                                                                            (string)attivita.Operatore))"
+                                                class="btn-azione btn-sospendi">
+                                            Sospendi
+                                        </button>
+                                        <button @onclick="() => ApriModalConfermaCompletamento((int)attivita.Id, (int)attivita.PreventivoId)"
+                                                class="btn-azione btn-completa">
+                                            Completa
+                                        </button>
+                                    </div>
+                                                                        }
+                                                                else if (attivita.Stato == "Sospesa")
+                                                                {
+                                                                    <button @onclick="() => ApriModalConfermaRipresa((int)attivita.Id, (int)attivita.PreventivoId)"
+                                                                            class="btn-azione btn-riprendi">
+                                                                        Riprendi
+                                                                    </button>
+                                                                }
+                                                            </div>
+
+                                                            <!-- Colonna Voce e Materiale -->
+                                                            <div class="colonna-voce">
+                                                                <div class="voce-attivita">@attivita.Voce</div>
+                                                                @if (!string.IsNullOrEmpty(attivita.CodiceMateriale))
+                                                                {
+                                                                    <div class="materiale-attivita">
+                                                                        Materiale: @attivita.CodiceMateriale
+                                                                        @if (!string.IsNullOrEmpty(attivita.QtaMateriale))
+                                                                        {
+                                                                            <text>(@attivita.QtaMateriale)</text>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </div>
+
+                                                            <!-- Colonna Operatore -->
+                                                            <div class="colonna-operatore">
+                                                                @if (!string.IsNullOrEmpty(attivita.Operatore))
+                                                                {
+                                                                    <div class="nome-operatore">@attivita.Operatore</div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="operatore-vuoto">—</div>
+                                                                }
+                                                            </div>
+
+                                                            <!-- Colonna Tempi -->
+                                                            <div class="colonna-tempi">
+                                                                @if (!string.IsNullOrEmpty(attivita.InfoSospensione))
+                                                                {
+                                                                    <div class="sospeso-container">
+                                                                        <div class="sospeso-header">
+                                                                            <span class="emoji-stato">⏸️</span>
+                                                                            <span class="sospeso-text">SOSPESO</span>
+                                                                        </div>
+                                                                        <div class="sospeso-details">
+                                                                            @attivita.InfoSospensione
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    @if (!string.IsNullOrEmpty(attivita.DataOraInizio))
+                                                                    {
+                                                                        <div class="data-ora-inizio">
+                                                                            @DateTime.Parse(attivita.DataOraInizio).ToString("dd/MM HH:mm")
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="tempo-vuoto">—</div>
+                                                                    }
+
+                                                                    @if (!string.IsNullOrEmpty(attivita.DataOraFine))
+                                                                    {
+                                                                        <div class="data-ora-fine">
+                                                                            @DateTime.Parse(attivita.DataOraFine).ToString("dd/MM HH:mm")
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="tempo-vuoto">—</div>
+                                                                    }
+
+                                                                    @if (!string.IsNullOrEmpty(attivita.OreImpiegate) && attivita.OreImpiegate != "—")
+                                                                    {
+                                                                        <div class="ore-impiegate">@attivita.OreImpiegate</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="tempo-vuoto">—</div>
+                                                                    }
+                                                                }
+                                                            </div>
+
+                                                            <!-- Colonna Allegati -->
+                                                            <div class="colonna-allegati">
+                                                                @if (attivita.Stato == "In Corso" || attivita.Stato == "Sospesa")
+                                                                {
+                                                                    <button @onclick="@(() => ApriModalAllegati((int)attivita.Id))"
+                                                                            class="btn-allegati-compatto"
+                                                                            title="Allega foto, audio, note o video">
+                                                                        <img src="/immagini/ico_allegati.png" alt="Allega" class="icona-allegato" />
+                                                                    </button>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-2">
+                                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                                <span class="ms-2">Caricamento attività...</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL INIZIO ATTIVITÀ (OVERLAY) -->
+@if (_mostraModalOperatore)
+{
+    <div class="modal-overlay">
+        <div class="modal-container">
+            <h4>Assegna Operatore</h4>
+            <p>Seleziona l'operatore per questa attività:</p>
+            <select @bind="@_operatoreSelezionato" class="select-operatore">
+                <option value="">-- Seleziona operatore --</option>
+                @foreach (var op in _operatori)
+                {
+                    <option value="@op.Id">@op.Cognome @op.Nome</option>
+                }
+            </select>
+            <div class="modal-buttons">
+                <button @onclick="@ConfermaInizioAttivita"
+                        disabled="@string.IsNullOrEmpty(_operatoreSelezionato)"
+                        class="btn-azione btn-inizia">
+                    ✅ Conferma Inizio
+                </button>
+                <button @onclick="@AnnullaSelezioneOperatore"
+                        class="btn-azione btn-secondario">
+                    ❌ Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL COMPLETAMENTO (OVERLAY) -->
+@if (_mostraModalConfermaCompletamento)
+{
+    <div class="modal-overlay">
+        <div class="modal-container">
+            <h4>Conferma Completamento</h4>
+            <p>Confermi il completamento dell'attività?</p>
+            <div class="modal-buttons">
+                <button @onclick="ConfermaCompletamento" class="btn-azione btn-completa">
+                    ✅ Conferma Completamento
+                </button>
+                <button @onclick="AnnullaCompletamento" class="btn-azione btn-secondario">
+                    ❌ Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL SOSPENSIONE (OVERLAY) -->
+@if (_mostraModalSospensione)
+{
+    <div class="modal-overlay">
+        <div class="modal-container">
+            <h4>Sospendi Attività</h4>
+            <textarea @bind="_motivazioneSospensione"
+                      placeholder="Inserisci motivazione sospensione..."
+                      class="textarea-motivazione"
+                      rows="3"></textarea>
+            <div class="modal-buttons">
+                <button @onclick="ConfermaSospensione"
+                        disabled="@string.IsNullOrEmpty(_motivazioneSospensione)"
+                        class="btn-azione btn-sospendi">
+                    ✅ Conferma Sospensione
+                </button>
+                <button @onclick="() => _mostraModalSospensione = false"
+                        class="btn-azione btn-secondario">
+                    ❌ Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL RIPRESA (OVERLAY) -->
+@if (_mostraModalConfermaRipresa)
+{
+    <div class="modal-overlay">
+        <div class="modal-container">
+            <h4>Conferma Ripresa Lavorazione</h4>
+            <p>Confermi la ripresa dell'attività?</p>
+            <div class="modal-buttons">
+                <button @onclick="ConfermaRipresa" class="btn-azione btn-riprendi">
+                    ✅ Conferma Ripresa
+                </button>
+                <button @onclick="() => _mostraModalConfermaRipresa = false" class="btn-azione btn-secondario">
+                    ❌ Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IEnumerable<RiepilogoLavorazione>? _riepilogo;
+    private Dictionary<int, IEnumerable<dynamic>> _attivitaPerSchedaLav = new();
+    private Dictionary<string, bool> _gruppiEspansi = new Dictionary<string, bool>();
+    private bool _mostraModalOperatore = false;
+    private string _operatoreSelezionato = "";
+    private List<Operatore> _operatori = new();
+    private int _attivitaSelezionataId = 0;
+    private int _preventivoIdCorrente;
+    private bool _mostraModalConfermaCompletamento = false;
+    private int _attivitaDaCompletareId = 0;
+    private int _preventivoDaCompletareId = 0;
+    private Dictionary<int, bool> _statoEspansioniSchede = new Dictionary<int, bool>();
+    private Dictionary<string, bool> _statoEspansioniGruppi = new Dictionary<string, bool>();
+    private bool _mostraModalSospensione = false;
+    private string _motivazioneSospensione = "";
+    private string _operatoreCorrente = "";
+    private bool _mostraModalConfermaRipresa = false;
+    private int _attivitaDaRiprendereId = 0;
+    private int _preventivoDaRiprendereId = 0;
+    //private bool _mostraModalAllegati = false;
+    private string testoRicerca = "";
+    private IEnumerable<RiepilogoLavorazione>? _riepilogoFiltrato;
+    private string AltezzaGrigliaCalcolata => "calc(100vh - 220px)";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaRiepilogo();
+        _operatori = (await PreventiviService.GetOperatoriAsync()).ToList();
+    }
+
+    private void ApriModalInizia(int attivitaId, int preventivoId)
+    {
+        _attivitaSelezionataId = attivitaId;
+        _preventivoIdCorrente = preventivoId;
+        _operatoreSelezionato = "";
+        _mostraModalOperatore = true;
+        StateHasChanged();
+    }
+
+    private void ApriModalConfermaCompletamento(int attivitaId, int preventivoId)
+    {
+        _attivitaSelezionataId = attivitaId;
+        _attivitaDaCompletareId = attivitaId;
+        _preventivoDaCompletareId = preventivoId;
+        _mostraModalConfermaCompletamento = true;
+        StateHasChanged();
+    }
+
+    private void AnnullaCompletamento()
+    {
+        _mostraModalConfermaCompletamento = false;
+        _attivitaDaCompletareId = 0;
+        _attivitaSelezionataId = 0;
+        _preventivoDaCompletareId = 0;
+        StateHasChanged();
+    }
+
+    private async Task ConfermaCompletamento()
+    {
+        _mostraModalConfermaCompletamento = false;
+        SalvaStatiEspansioni();
+        await CompletaAttivitaEffettivo(_attivitaDaCompletareId, _preventivoDaCompletareId);
+        _attivitaDaCompletareId = 0;
+        _preventivoDaCompletareId = 0;
+    }
+
+    private void SalvaStatiEspansioni()
+    {
+        _statoEspansioniSchede.Clear();
+        if (_riepilogo != null)
+        {
+            foreach (var scheda in _riepilogo)
+            {
+                _statoEspansioniSchede[scheda.PreventivoId] = scheda.IsExpanded;
+            }
+        }
+
+        _statoEspansioniGruppi.Clear();
+        foreach (var gruppo in _gruppiEspansi)
+        {
+            _statoEspansioniGruppi[gruppo.Key] = gruppo.Value;
+        }
+    }
+
+    private void RipristinaStatiEspansioni()
+    {
+        if (_riepilogo != null)
+        {
+            foreach (var scheda in _riepilogo)
+            {
+                if (_statoEspansioniSchede.TryGetValue(scheda.PreventivoId, out bool isExpanded))
+                {
+                    scheda.IsExpanded = isExpanded;
+                }
+            }
+        }
+
+        _gruppiEspansi.Clear();
+        foreach (var gruppo in _statoEspansioniGruppi)
+        {
+            _gruppiEspansi[gruppo.Key] = gruppo.Value;
+        }
+    }
+
+    private async Task CompletaAttivitaEffettivo(int attivitaId, int preventivoId)
+    {
+        try
+        {
+            bool successo = await PreventiviService.CompletaAttivitaAsync(attivitaId);
+
+            if (successo)
+            {
+                bool schedaCompletata = await PreventiviService.IsSchedaCompletamenteCompletataAsync(preventivoId);
+
+                if (schedaCompletata)
+                {
+                    var scheda = _riepilogo?.FirstOrDefault(r => r.PreventivoId == preventivoId);
+                    if (scheda != null)
+                    {
+                        //await PreventiviService.InviaNotificaCompletamentoSchedaAsync(preventivoId, scheda.NomeBarca);
+                    }
+                }
+
+                await CaricaRiepilogo();
+                await CaricaAttivita(preventivoId);
+                RipristinaStatiEspansioni();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore durante il completamento: {ex.Message}");
+        }
+    }
+
+    private void AnnullaSelezioneOperatore()
+    {
+        _mostraModalOperatore = false;
+        _operatoreSelezionato = "";
+        StateHasChanged();
+    }
+
+    private async Task ConfermaInizioAttivita()
+    {
+        if (string.IsNullOrEmpty(_operatoreSelezionato))
+            return;
+
+        SalvaStatiEspansioni();
+        var operaio = _operatori.FirstOrDefault(op => op.Id.ToString() == _operatoreSelezionato);
+        if (operaio == null) return;
+
+        var schedaLavorazione = new SchedaLavorazioneModel
+        {
+            Id = _attivitaSelezionataId,
+            Operatore = $"{operaio.Cognome} {operaio.Nome}",
+            DataOraInizio = DateTime.Now,
+            Stato = "In Corso"
+        };
+
+        try
+        {
+            bool successo = await PreventiviService.AggiornaSchedaLavorazioneAsync(schedaLavorazione);
+
+            if (successo)
+            {
+                await CaricaRiepilogo();
+                await CaricaAttivita(_preventivoIdCorrente);
+                RipristinaStatiEspansioni();
+                _mostraModalOperatore = false;
+                _operatoreSelezionato = "";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore durante l'aggiornamento: {ex.Message}");
+        }
+    }
+
+    private async Task CaricaRiepilogo()
+    {
+        _riepilogo = await PreventiviService.GetRiepilogoLavorazioniAsync();
+    }
+
+    private async Task ToggleEspansione(RiepilogoLavorazione schedaLav)
+    {
+        schedaLav.IsExpanded = !schedaLav.IsExpanded;
+
+        if (schedaLav.IsExpanded && !_attivitaPerSchedaLav.ContainsKey(schedaLav.PreventivoId))
+        {
+            await CaricaAttivita(schedaLav.PreventivoId);
+        }
+
+        _statoEspansioniSchede[schedaLav.PreventivoId] = schedaLav.IsExpanded;
+        StateHasChanged();
+    }
+
+    private void ApriModalSospensione(int attivitaId, int preventivoId, string operatore)
+    {
+        _attivitaSelezionataId = attivitaId;
+        _preventivoIdCorrente = preventivoId;
+        _motivazioneSospensione = "";
+        _operatoreCorrente = operatore;
+        _mostraModalSospensione = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfermaSospensione()
+    {
+        if (string.IsNullOrEmpty(_motivazioneSospensione))
+            return;
+
+        SalvaStatiEspansioni();
+        try
+        {
+            bool successo = await PreventiviService.SospendiAttivitaAsync(
+                _attivitaSelezionataId,
+                _operatoreCorrente,
+                _motivazioneSospensione
+            );
+
+            if (successo)
+            {
+                await CaricaRiepilogo();
+                await CaricaAttivita(_preventivoIdCorrente);
+                RipristinaStatiEspansioni();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore durante la sospensione: {ex.Message}");
+        }
+        finally
+        {
+            _mostraModalSospensione = false;
+            _motivazioneSospensione = "";
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleEspansioneGruppo(string key)
+    {
+        if (_gruppiEspansi.ContainsKey(key))
+        {
+            _gruppiEspansi[key] = !_gruppiEspansi[key];
+        }
+        else
+        {
+            _gruppiEspansi[key] = true;
+        }
+
+        _statoEspansioniGruppi[key] = _gruppiEspansi[key];
+        StateHasChanged();
+    }
+
+    private bool IsGruppoEspanso(string key)
+    {
+        return _gruppiEspansi.ContainsKey(key) && _gruppiEspansi[key];
+    }
+
+    private async Task CaricaAttivita(int preventivoId)
+    {
+        var attivita = await PreventiviService.GetAttivitaPerPreventivoAsync(preventivoId);
+        _attivitaPerSchedaLav[preventivoId] = attivita;
+        StateHasChanged();
+    }
+
+    private string CalcolaStatoAttivita(List<dynamic> voci)
+    {
+        if (voci.All(v => v.Stato == "Completata")) return "Completata";
+        if (voci.Any(v => v.Stato == "In Corso")) return "In Corso";
+        if (voci.Any(v => v.Stato == "Sospesa")) return "Sospesa";
+        return "Da Iniziare";
+    }
+
+    private string GetEmojiStato(string stato)
+    {
+        return stato switch
+        {
+            "Completata" => "🟢",
+            "In Corso" => "🟡",
+            "Da Iniziare" => "🔴",
+            "Sospesa" => "🔵",
+            _ => "🔴"
+        };
+    }
+
+    private void ApriModalConfermaRipresa(int attivitaId, int preventivoId)
+    {
+        _attivitaDaRiprendereId = attivitaId;
+        _preventivoDaRiprendereId = preventivoId;
+        _mostraModalConfermaRipresa = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfermaRipresa()
+    {
+        _mostraModalConfermaRipresa = false;
+        SalvaStatiEspansioni();
+        try
+        {
+            bool successo = await PreventiviService.RiprendiAttivitaAsync(_attivitaDaRiprendereId);
+
+            if (successo)
+            {
+                await CaricaRiepilogo();
+                await CaricaAttivita(_preventivoDaRiprendereId);
+                RipristinaStatiEspansioni();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore durante la ripresa: {ex.Message}");
+        }
+        finally
+        {
+            _attivitaDaRiprendereId = 0;
+            _preventivoDaRiprendereId = 0;
+            StateHasChanged();
+        }
+    }
+
+    private void ApriModalAllegati(int attivitaId)
+    {
+        Console.WriteLine($"Apri modal allegati per attività {attivitaId}");
+    }
+
+    private void OnRicercaChanged(ChangeEventArgs e)
+    {
+        testoRicerca = e.Value?.ToString() ?? "";
+        FiltraRisultati();
+    }
+
+    private void FiltraRisultati()
+    {
+        if (string.IsNullOrEmpty(testoRicerca))
+        {
+            _riepilogoFiltrato = null;
+        }
+        else
+        {
+            _riepilogoFiltrato = _riepilogo?.Where(r =>
+                r.NomeBarca.Contains(testoRicerca, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+    }
+
+    private string GetClasseStato(string stato)
+    {
+        return stato switch
+        {
+            "Completata" => "stato-completata",
+            "In Corso" => "stato-in-corso",
+            "Da Iniziare" => "stato-da-iniziare",
+            _ => "stato-da-iniziare"
+        };
+    }
+}

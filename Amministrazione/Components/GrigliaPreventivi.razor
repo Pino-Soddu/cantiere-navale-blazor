@@ -1,0 +1,165 @@
+﻿<link href="css/Amministrazione/GrigliaPreventivi.css" rel="stylesheet" />
+@using CNP.SchedaLavorazione.Models
+@using CNP.Amministrazione.Models
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+
+@if (Preventivi == null || !Preventivi.Any())
+{
+    <div class="alert alert-warning">
+        Nessun preventivo trovato nel database.
+    </div>
+}
+else if (preventiviFiltrati.Count == 0 && !string.IsNullOrEmpty(testoRicerca))
+{
+    <div class="alert alert-info">
+        Nessun preventivo trovato per "<strong>@testoRicerca</strong>"
+    </div>
+}
+else
+{
+    <div class="griglia-scroll-container" style="--altezza-griglia: @AltezzaGriglia;">
+        <table class="tabella-preventivi table-striped">
+            <thead>
+                <tr>
+                    <th>Azioni</th>
+                    <th>Codice</th>
+                    <th>Data Creazione</th>
+                    <th>Cliente</th>
+                    <th>Imbarcazione</th>
+                    <th>Stato</th>
+                    <th>Importo Totale</th>
+                    <th>Descrizione</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var preventivo in preventiviFiltrati)
+                {
+                    <tr class="@(preventivo == PreventivoEvidenziato ? "riga-evidenziata" : "")">
+
+                        <td>
+                            <div class="btn-group btn-group-sm btn-group-compact">
+                                <!-- AGGIUNGI btn-group-compact -->
+                                <button class="btn btn-outline-primary" @onclick="() => OnModificaPreventivo.InvokeAsync(preventivo)">
+                                    ✏️
+                                </button>
+
+                                @if (preventivo.Stato?.ToUpper() == "BOZZA")
+                                {
+                                    <button class="btn btn-outline-success"
+                                            @onclick="() => OnInviaPreventivo.InvokeAsync(preventivo)"
+                                            title="Invia preventivo al cliente">
+                                        🖂
+                                    </button>
+                                }
+
+                                <button class="btn btn-outline-danger"
+                                        @onclick="() => OnEliminaPreventivo.InvokeAsync(preventivo)">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                        <td><strong>@preventivo.PreventivoId</strong></td>
+                        <td>@preventivo.DataCreazione.ToString("dd/MM/yyyy")</td>
+                        <td>@preventivo.RagioneSociale</td>
+                        <td>@preventivo.NomeBarca</td>
+                        <td>
+                            <span class="badge @GetBadgeStato(preventivo.Stato)">
+                                @preventivo.Stato
+                            </span>
+                        </td>
+                        <td class="text-end">€ @preventivo.ImportoTotale.ToString("N2")</td>
+                        <td>@preventivo.Descrizione</td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<Preventivo> Preventivi { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Preventivo> OnModificaPreventivo { get; set; }
+
+    [Parameter]
+    public EventCallback<Preventivo> OnEliminaPreventivo { get; set; }
+
+    [Parameter]
+    public double AltezzaGriglia { get; set; } = 490;
+
+    [Parameter]
+    public Preventivo? PreventivoEvidenziato { get; set; } 
+
+    [Parameter]
+    public EventCallback<Preventivo> OnInviaPreventivo { get; set; }
+
+    private List<Preventivo> preventiviFiltrati { get; set; } = new(); 
+    private StatiPreventivoConfig _statiConfig = new();
+    private string testoRicerca = "";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            var section = Configuration.GetSection("StatiPreventivo");
+            if (section.Exists())
+            {
+                _statiConfig = section.Get<StatiPreventivoConfig>() ?? CreaConfigDefault();
+            }
+            else
+            {
+                _statiConfig = CreaConfigDefault();
+            }
+        }
+        catch
+        {
+            _statiConfig = CreaConfigDefault();
+        }
+    }
+
+    private string GetBadgeStato(string? stato)
+    {
+        if (string.IsNullOrEmpty(stato) || _statiConfig == null)
+            return "badge badge-default";
+
+        var statoNormalizzato = stato.Replace(" ", "_").ToUpper();
+
+        var configProperty = _statiConfig.GetType().GetProperty(statoNormalizzato);
+        if (configProperty?.GetValue(_statiConfig) is StatoPreventivoConfig config && !string.IsNullOrEmpty(config.Colore))
+        {
+            return config.Colore;
+        }
+
+        return "badge badge-default";
+    }
+
+    private StatiPreventivoConfig CreaConfigDefault()
+    {
+        return new StatiPreventivoConfig
+        {
+            BOZZA = new StatoPreventivoConfig { Colore = "badge badge-bozza" },
+            INVIATO = new StatoPreventivoConfig { Colore = "badge badge-inviato" },
+            ACCETTATO = new StatoPreventivoConfig { Colore = "badge badge-accettato" },
+            IN_LAVORAZIONE = new StatoPreventivoConfig { Colore = "badge badge-lavorazione" },
+            RIFIUTATO = new StatoPreventivoConfig { Colore = "badge badge-rifiutato" },
+            IN_REVISIONE = new StatoPreventivoConfig { Colore = "badge badge-revisione" },
+            SCADUTO = new StatoPreventivoConfig { Colore = "badge badge-scaduto" },
+            CONVERTITO_ORDINE = new StatoPreventivoConfig { Colore = "badge badge-ordine" },
+            ANNULLATO = new StatoPreventivoConfig { Colore = "badge badge-annullato" },
+            ATTESA_PAGAMENTO = new StatoPreventivoConfig { Colore = "badge badge-pagamento" }
+        };
+    }
+
+    protected override void OnParametersSet()
+    {
+        preventiviFiltrati = Preventivi ?? new();
+        StateHasChanged();
+    }
+
+}
