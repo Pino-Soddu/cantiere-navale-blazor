@@ -1,0 +1,148 @@
+﻿CNP/
+├── Properties/  
+│   └── launchSettings.json          # Configurazione debug
+├── wwwroot/                    
+│   ├── css/                         # Stili principali CSS
+│   │   ├── Amministrazione			 # Stili Sezione Amministrazione
+│   │   │   ├── GrigliaPreventivi.css
+│   │   │   ├── ModalNuovaBarca.css
+│   │   │   ├── ModalNuovoCliente.css
+│   │   │   └── NuovoPreventivo.css
+│   │   └── app.css
+│   ├── js/                          # gestione dello scroll della chat
+│   │   └── scroll.css
+│   └── Immagini/                    # Immagini del progetto
+│       └── logo.png
+
+
+├── Amministrazione/                 # Partizione destinata alla Amministrazione
+│   ├── Components/
+│   │   └── GrigliaPreventivi.razor       # Lista Preventivi esistenti
+│   └── Models/
+│       ├── MacroAttivita.cs              # Dati specifici per invio Email
+│       ├── ModelloPreventivo.cs          # Dati specifici preventivo
+│       └── TariffePreventivi.cs          # Tariffe applicate sui preventivi
+│   ├── Pages/
+│   │   ├── HomeAmministrazione.razor     # Pagina Amministrazione
+│   │   ├── ModalNuovaBarca.razor         # Modale di inserimento dati nuova barca
+│   │   ├── ModalNuovoCliente.razor       # Modale di inserimento dati nuovo Cliente
+│   │   ├── ModificaPreventivo.razor      # Pagina di modifica di un preventivo (attualmente vuoto)
+│   │   └── NuovoPreventivo.razor         # Pagina di inserimento nuovo preventivo
+│   ├── Services/
+│   │   ├── AttivitaService.cs				# Gestione attività
+│   │   ├── CalcoloService.cs				# Gestione algoritmi di calcolo del preventivo
+│   │   ├── ClientiService.cs				# Gestione clienti
+│   │   ├── DettaglioPreventiviService.cs	# CRUD Dettaglio preventivi
+│   │   ├── EmailService.cs					# Gestione Invio Email preventivi
+│   │   ├── ImbarcazioniService.cs			# Gestione imbarcazioni
+│   │   ├── MaterialiService.cs				# Gestione materiali per preventivo 
+│   │   ├── ModelliPreventiviService.cs		# Gestione modelli preventivo 
+│   │   ├── PdfService.cs					# Generazione allegato Preventivo in pdf 
+│   │   ├── PreventiviService.cs			# CRUD preventivi
+│   │   ├── SubAttivitaService.cs			# Gestione SubAttivita o Voci
+│   │   └── UnitaMisuraService.cs			# Gestione Unità Misura per Combo
+
+│   ├── LayoutAmministrazione.razor
+│   └── LayoutAmministrazione.razor.css
+
+├── Clienti/                              # Partizione destinata ai Clienti
+│   ├── Components/
+│   │   ├── ChatCliente.razor             # Chat dedicata ai Clienti loggati
+│   │   └── StatoLavorazioni.razor        # Componente stato lavorazioni
+│   └── Models/
+│       ├── DatiCliente.cs                # Dati specifici cliente
+│       └── MessaggioChat.cs              # Dati specifici Chat
+│   ├── Pages/
+│   │   └── HomePageCliente.razor         # Pagina principale
+│   ├── Services/
+│   │   ├── AssistenteClienteService.cs   # Servizio chat con accesso dati specifici
+│   │   └── IAssistenteClienteService.cs  # Interfaccia Servizio chat con accesso dati specifici
+│   ├── LayoutCliente.razor
+│   └── LayoutCliente.razor.css
+
+├── Data/                          
+│   ├── DatabaseService/             # Servizio per l'accesso al database con ADO.NET
+│   └── IDatabaseService/			 # Interfaccia per l'accesso al database con ADO.NET
+
+├── Login/ 
+│   ├── Components/
+│   │   └── ModaleLogin.razor   
+│   ├── Models/
+│   │   ├── LoginRequest.cs
+│   │   └── LoginResponse.cs
+│   ├── Services/   
+│   │   ├── CredenzialiClienteService.cs
+│   │   ├── GestoreStatoLogin.cs
+│   │   ├── LoginService.cs
+│   │   └── ILoginService.cs
+
+├── Models/                          
+│   ├── Configurazione/              # Classi per appsettings
+│   │   ├── ConfigurazionePreventivi.cs
+│   │   ├── Contatti.cs
+│   │   ├── DatiAzienda.cs
+│   │   └── Indirizzo.cs
+
+├── Pages/
+│   └── _Host.cshtml                 # Pagina host
+
+├── Pubblica/                        # Partizione destinata agli accessi Pubblici
+│   ├── Components/
+│   │   ├── ChatOverlay.razor        # (Stili su app.css)
+│   ├── Models/
+│   │   └── ChatMessage.cs
+│   ├── Pages/
+│   │   ├── Homepage.razor           # (Stili su app.css)
+│   └── Services/
+│       ├── IChatPubblicaService.cs
+│       └── ChatPubblicaService.cs
+
+
+├── Segreteria/                      # Partizione destinata alla Segreteria
+│   ├── Components/
+│   │   ├── GrigliaClienti.razor
+│   │   ├── GrigliaFornitori.razor
+│   │   ├── GrigliaImbarcazioni.razor
+│   │   ├── GrigliaMateriali.razor
+│   │   └── ModalCliente.razor
+│   ├── Models/
+│   │   ├── Cliente.cs
+│   │   ├── Fornitore.cs
+│   │   ├── Imbarcazione.cs
+│   │   ├── Materiale.cs
+│   │   ├── Operatore.cs
+│   │   ├── TipoImbarcazione.cs
+│   │   └── UnitaMisura.cs
+│   ├── Pages/
+│   │   ├── HomeSegreteria.razor
+│   │   └── HomeSegreteria.razor.css
+│   ├── Services/
+│   │   ├── AnagraficheService.cs
+│   │   ├── LoginService.cs
+│   │   └── ILoginService.cs
+│   ├── LayoutSegreteria.razor
+│   └── LayoutSegreteria.razor.css
+
+├── SchedaLavorazione/                # Partizione destinata alla Scheda Lavorazione
+│   ├── Components/                   (vuoto)
+│   ├── Models/
+│   │   ├── Attivita.cs
+│   │   ├── DettaglioPreventivo.cs
+│   │   ├── Preventivo.cs
+│   │   ├── RiepilogoLavorazione.cs
+│   │   ├── SchedaLavorazioneModel.cs
+│   │   ├── StatoLavorazione.cs
+│   │   └── SubAttività.cs
+│   ├── Pages/
+│   │   └── HomeSchedaLavorazione.razor
+│   ├── Services/
+│   │   └── PreventiviService.cs
+│   ├── LayoutSchedaLavorazione.razor
+│   └── LayoutSchedaLavorazione.razor.css
+
+├── _Imports.razor                   # Import globali
+├── App.razor                        # Componente radice
+├── appsettings.json                 # Configurazione
+├── MainLayout.razor                 # Layout principale
+├── MainLayout.razor.css             # Vuoto (Stili Layout principale su app.css)
+└── Program.cs                       # Entry point
