@@ -1,0 +1,145 @@
+﻿        private void CalcolaTotaleVoce()
+        {
+            if (CaricamentoGriglia) return;
+
+            int NOperai;
+            double ImportoVoce = 0;
+            string UnitaMisura;
+            double QtaVoce;
+            double QtaMAT;
+            double CostoMateriale = 0;
+            double ImportoMateriale = 0;            // ricavato da QtaMAT * CostoMateriale
+
+            //
+            // ATTIVITA'
+            //
+            NOperai = 0;
+            if (txtNOperai.Text.Length > 0) NOperai = Convert.ToInt32(txtNOperai.Text);
+            
+            UnitaMisura = comboUM_Voce.Text;
+            
+            QtaVoce = 0;
+            if (txtQta_Voce.Text.Length>0) QtaVoce = Convert.ToDouble(txtQta_Voce.Text);
+
+            //
+            // Se SOSTA calcola l'importo in base al numero dei giorni
+            //
+            if(UnitaMisura.ToLower() == "gg"
+                && txtImportoSosta.Text.Length > 0)
+            {
+                ImportoVoce = QtaVoce * Convert.ToDouble(txtImportoSosta.Text);
+            }
+
+            //
+            // Calcola il totale della singola Attività in funzione di:
+            //   -  N. Operai
+            //   -  UnitaMisura
+            //   -  QtaAttivita
+            //
+            if (UnitaMisura.ToLower() == "min")
+            {
+                ImportoVoce = (Program.ImportoPreventivo / 60) * NOperai * QtaVoce;
+            }
+            else if (UnitaMisura.ToLower() == "ore")
+            {
+                ImportoVoce = (Program.ImportoPreventivo) * NOperai * QtaVoce;
+            }
+            else if (UnitaMisura.ToLower() == "num")
+            {
+                ImportoVoce = (Program.ImportoPreventivo) * NOperai * QtaVoce;
+            }
+            else if (UnitaMisura.ToLower() == "ml")
+            {
+                ImportoVoce = (Program.ImportoPreventivo / 60) * NOperai * QtaVoce * Convert.ToDouble(txtLunghBarca.Text);
+            }
+
+            txtTotateAttivitaOperativa.Text= ImportoVoce.ToString("C", new System.Globalization.CultureInfo("it-IT"));
+            
+            
+            
+            //
+            // MATERIALI
+            //
+            string CodiceMateriale = comboCodiceMateriale.Text;
+
+            if (CodiceMateriale.Length > 0)
+            {
+                string SQL;
+                SQL = "SELECT * FROM Materiali ";
+                SQL += " WHERE  CodiceMateriale = '" + CodiceMateriale.ToString().Replace("'", "''") + "'";
+
+                SqlConnection conn = new SqlConnection(Program.strConnectionServer);
+                SqlCommand SelectCommand = new SqlCommand(SQL, conn);
+                conn.Open();
+                SelectCommand.Prepare();
+                SqlDataReader reader;
+                reader = SelectCommand.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    CostoMateriale = Convert.ToDouble(reader["PrezzoUnitario"]);
+                    //txtCosto_Mat.Text = CostoMateriale.ToString();
+                }
+                reader.Close();
+                conn.Close();
+
+                QtaMAT = 0;
+                if (decimal.TryParse(txtQta_MAT.Text, out decimal result))
+                    QtaMAT = Convert.ToDouble(txtQta_MAT.Text);
+                else
+                    txtQta_MAT.Text = "0";
+
+
+                if(txtCosto_Mat.Text.Length > 0) CostoMateriale = Convert.ToDouble(txtCosto_Mat.Text);
+
+
+
+                //
+                // Calcola il totale dei Materiali (portando i valori a 100 grammi) in funzione di:
+                //   -  UnitaMisura
+                //   -  QtaAttivita
+                //   -  Dimensioni Barca (quando richiesto)
+                //
+                ImportoMateriale = CostoMateriale * QtaMAT;
+
+                if (UnitaMisura.ToLower() == "kg/ml")
+                {
+                    ImportoMateriale = (CostoMateriale * QtaMAT) * Convert.ToDouble(txtLunghBarca.Text);
+                }
+                else
+                {
+
+                }
+
+                txtTotateMateriale.Text = ImportoMateriale.ToString("C", new System.Globalization.CultureInfo("it-IT"));
+            }
+            //
+            // ===============  TOTALI
+            //
+
+            double TotaleImportoAttivita = ImportoVoce + ImportoMateriale;
+            string importoFormattato = TotaleImportoAttivita.ToString("C", new System.Globalization.CultureInfo("it-IT"));
+
+            labTotaleVoce.Text = importoFormattato;
+        }
+        private void CalcolaTotalePreventivo()
+        {
+            double ImportoAttivita = 0;
+            double ImportoPreventivo = 0;
+            string numeroFormattato = "0";
+            for (int Ind = 0; Ind < dGV_CorpoPreventivo.RowCount; Ind++)
+            {
+                object cellValue = dGV_CorpoPreventivo.Rows[Ind].Cells["ATTIVITÀ"].Value;
+                if (cellValue == null || cellValue == DBNull.Value || string.IsNullOrEmpty(cellValue.ToString()))
+                { }
+                else { 
+                    numeroFormattato = dGV_CorpoPreventivo.Rows[Ind].Cells["TotaleVoce"].Value.ToString().Replace("€","").Trim();
+                    ImportoAttivita = double.Parse(numeroFormattato, CultureInfo.GetCultureInfo("it-IT"));
+                    ImportoPreventivo += ImportoAttivita;
+                }
+            }
+
+            string importoFormattato = ImportoPreventivo.ToString("C", new System.Globalization.CultureInfo("it-IT"));
+            TotalePreventivo.Text = importoFormattato;
+            panelTotPreventivo.Visible = true;
+        }

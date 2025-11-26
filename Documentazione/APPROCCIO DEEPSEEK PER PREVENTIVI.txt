@@ -1,0 +1,123 @@
+﻿APPROCCIO DEEPSEEK PER PREVENTIVI
+🎯 FOCUS SU ATTIVITÀ AMMINISTRATIVE E OPERATIVE
+1. GENERAZIONE AUTOMATICA DOCUMENTI
+text
+ASSISTENTE: "Il preventivo #245 è pronto!
+Vuoi che generi:
+• 📄 PDF pronto per l'invio al cliente
+• 📧 Email precompilata con testo professionale
+• 🏷️ Etichette per archivio fisico"
+
+[✅ GENERA PDF] [📧 PREPARA EMAIL] [❌ ALTRO MOMENTO]
+2. GESTIONE COMUNICAZIONI CLIENTE
+text
+ASSISTENTE: "Preventivo #245 - Stato: Inviato, Attesa: 7 giorni
+• Promemoria scadenza: 03/05/2024
+• Clienti simili: risposta media in 5 giorni
+• Suggerisco: preparare follow-up per il 04/05"
+
+[📅 IMPOSTA PROMEMORIA] [📞 PREPARA TELEFONATA] [✉️ INVIA RICHIAMA]
+3. CREAZIONE E GESTIONE MODELLI
+text
+ASSISTENTE: "Vuoi salvare questo preventivo come modello?
+• Nome modello: [MANUTENZIONE_ORDINARIA_2024 ]
+• Basato su: Preventivo #245
+• 12 voci attività, 8 materiali
+
+[💾 SALVA COME MODELLO] [✏️ MODIFICA NOME] [❌ ANNULLA]
+text
+ASSISTENTE: "Crea modello personalizzato:
+• Nome: [MANUTENZIONE_COMPLETA_STINCHI ]
+• Base: Preventivo #245 
+• Aggiungi: Lavorazione stinchi e controlli aggiuntivi
+
+[🔧 CREA MODELLO PERSONALIZZATO] [👀 ANTEPRIMA] [❌ ANNULLA]
+🔧 FUNZIONALITÀ OPERATIVE SPECIFICHE
+4. DUPLICAZIONE E MODIFICA PREVENTIVI
+text
+ASSISTENTE: "Vuoi duplicare il preventivo #245 per:
+• Stesso cliente, barca diversa
+• Cliente diverso, stesse lavorazioni
+• Modello base per futuri preventivi"
+
+[👥 STESSO CLIENTE] [🔁 NUOVO CLIENTE] [💾 COME MODELLO]
+5. CONTROLLI QUALITÀ DATI
+text
+ASSISTENTE: "Controllo completato ✓
+• ✅ Tutti i campi obbligatori compilati
+• ✅ Calcoli economici corretti
+• ⚠️  Mancano foto lavorazione precedente
+• 💡 Suggerimento: aggiungere note tecniche per il cliente"
+
+[📸 ALLEGA FOTO] [📝 AGGIUNGI NOTE] [✅ IGNORA]
+6. GESTIONE SCADENZE E PROMEMORIA
+text
+ASSISTENTE: "Scadenze attive:
+• ⏰ Preventivo #245 scade il 15/05
+• 📋 3 preventivi in attesa di risposta
+• 📞 2 clienti da richiamare domani
+
+[📅 VEDI CALENDARIO] [👥 LISTA CONTATTI] [✅ SEGNA COME GESTITO]
+📊 REPORT E ANALISI AUTOMATICI
+7. RIEPILOGHI SETTIMANALI
+text
+ASSISTENTE: "Riepilogo settimana 15-21 Aprile:
+• 📈 12 nuovi preventivi creati
+• 💰 Valore totale: €45.200
+• ✅ 8 preventivi accettati (67%)
+• 📉 4 preventivi in attesa
+
+[📊 REPORT DETTAGLIATO] [📧 INVIA A AMMINISTRAZIONE] [✅ CHIUDI]
+8. CONVERSIONE IN ORDINI DI LAVORO
+text
+ASSISTENTE: "Preventivo #245 ACCETTATO! 🎉
+Vuoi procedere con:
+• 🏭 Creazione ordine di lavoro
+• 👥 Assegnazione operatori
+• 📦 Ordine materiali necessari
+• 📅 Programmazione lavori"
+
+[🚀 CREA ORDINE LAVORO] [⏰ RIMANDA] [✏️ MODIFICA]
+🔄 WORKFLOW AUTOMATIZZATI
+9. FOLLOW-UP AUTOMATICO CLIENTI
+text
+ASSISTENTE: "Preventivo #245 - Nessuna risposta da 10 giorni
+Azioni suggerite:
+• 📧 Email di sollecito gentile
+• 📞 Chiamata di follow-up
+• 💰 Offerta promozionale limitata
+
+[🔄 ATTIVA FOLLOW-UP] [⏸️ SOSPENDI] [🗑️ ARCHIVIA]
+10. GESTIONE ARCHIVIAZIONE
+text
+ASSISTENTE: "Preventivo #245 scaduto da 30 giorni
+• Stato: Non accettato
+• Azioni: Archiviazione automatica
+• Conservazione: 5 anni (obbligo di legge)
+
+[📁 ARCHIVIA AUTOMATICAMENTE] [👀 RIESAMINA] [💾 ESPORTA PDF]
+🎯 VALORE AGGIUNTO SENZA INVADENZA
+✔️ COSA FACCIO:
+Automazione processi amministrativi
+
+Gestione documentale
+
+Controlli qualità dati
+
+Promemoria e scadenze
+
+Report e analisi
+
+Creazione modelli
+
+❌ COSA NON FACCIO:
+Suggerire lavorazioni non richieste
+
+Modificare strategie commerciali
+
+Sostituire decisioni umane
+
+Inventare nuove attività
+
+Questo approccio mi trasforma in un "assistente amministrativo intelligente" che supporta senza sostituire le competenze tecniche del personale specializzato.
+

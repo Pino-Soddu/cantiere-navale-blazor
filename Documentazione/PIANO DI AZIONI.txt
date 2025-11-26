@@ -1,0 +1,38 @@
+﻿PIANO DI AZIONI PASSO PASSO
+Ecco il piano di sviluppo per iniziare:
+
+FASE 1 - SETUP INIZIALE
+
+Creazione progetto Blazor Server con nome "CNP"
+
+Configurazione base SQL Server Express
+
+Setup struttura cartelle per le 4 aree separate
+
+FASE 2 - HOMEPAGE PUBBLICA
+4. Implementazione layout base (Header/Footer)
+5. Integrazione Chat DeepSeek pubblica
+6. Sezione informazioni servizi e preventivi ordinaria
+7. Modelli manutenzione (Base/Completa/Premium)
+
+FASE 3 - SISTEMA DI AUTENTICAZIONE
+8. Setup autenticazione Blazor con gerarchia accessi
+9. Database utenti per Clienti, Segreteria, Amministrazione
+10. Login area clienti con credenziali imbarcazione
+
+FASE 4 - AREA CLIENTI
+11. Dashboard cliente con benvenuto personalizzato
+12. Visualizzazione stato lavorazioni in tempo reale
+13. Integrazione Assistente DeepSeek dedicato
+14. Sistema comunicazioni con cantiere
+
+FASE 5 - AREA SEGRETERIA
+15. Interfaccia conversazionale segreteria
+16. Gestione anagrafiche (Clienti/Fornitori/Attività/Materiali)
+17. Metodo ibrido chat + griglia editabile
+18. Sistema import/export dati
+
+FASE 6 - MIGRAZIONE LOGICA C#
+19. Porting formule e algoritmi preventivi da WinForms
+20. Migrazione struttura dati anagrafiche
+21. Adattamento logica calcoli lavorazioni

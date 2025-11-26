@@ -74,7 +74,8 @@
 │   │   ├── CredenzialiClienteService.cs
 │   │   ├── GestoreStatoLogin.cs
 │   │   ├── LoginService.cs
-│   │   └── ILoginService.cs
+│   │   ├── ILoginService.cs
+│   │   └── SessionStorageService.cs
 
 ├── Models/                          
 │   ├── Configurazione/              # Classi per appsettings

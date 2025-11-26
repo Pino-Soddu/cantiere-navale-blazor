@@ -1,0 +1,374 @@
+﻿📋 RIEPILOGO COMPLETO - GENERAZIONE NUOVO PREVENTIVO
+🎯 OBIETTIVO PRINCIPALE
+Creare un flusso di lavoro efficiente e intuitivo per la generazione di preventivi, combinando modelli predefiniti con personalizzazioni specifiche.
+
+🏗️ ARCHITETTURA FUNZIONALE
+1. PAGINA DEDICATA
+NuovoPreventivo.razor - Pagina autonoma per la creazione preventivi
+
+Non modali o componenti secondari
+
+Layout a sezioni progressive
+
+2. FLUSSO OPERATIVO
+text
+CLIENTE → BARCA → MODELLO → PERSONALIZZAZIONE → FINALIZZAZIONE
+📝 SEZIONI DETTAGLIATE
+SEZIONE 1 - DATI GENERALI PREVENTIVO
+Numero Preventivo (auto-generato progressivo)
+
+Data Emissione (auto = oggi, modificabile)
+
+Data Scadenza (calcolata +30gg, modificabile)
+
+Titolo/Descrizione (campo libero obbligatorio)
+
+Responsabile Lavori (opzionale)
+
+SEZIONE 2 - CLIENTE
+text
+[▼ Combo Ricerca Clienti] [➕ Nuovo Cliente]
+Modal Nuovo Cliente (dati essenziali):
+
+Ragione Sociale/Nome ✓
+
+Indirizzo completo ✓
+
+CAP, Comune, Provincia ✓
+
+Telefono ✓
+
+Email ✓
+
+SEZIONE 3 - IMBARCAZIONE
+text
+[▼ Combo Barche Cliente] [➕ Nuova Barca]
+Modal Nuova Barca (dati essenziali):
+
+Nome Imbarcazione ✓
+
+Tipo Imbarcazione (combo) ✓
+
+Lunghezza (metri) ✓
+
+Larghezza (metri, opzionale)
+
+Superficie (calcolata automatica)
+
+SEZIONE 4 - SELEZIONE MODELLO BASE
+text
+[▼ Combo Modelli Preventivi] [🔍 Griglia Anteprima Modelli]
+Funzionalità:
+
+Combo ricerca modelli per nome
+
+Griglia anteprima con voci dettagliate
+
+Selezione one-click → popolamento automatico
+
+Opzione "Crea da zero" per preventivi custom
+
+SEZIONE 5 - CORPO PREVENTIVO (GRIGLIA VOCI)
+STRUTTURA GRIGLIA:
+text
+┌───┬──────────────┬──────────────────────┬──────┬─────┬──────────┐
+│ # │ ATTIVITÀ     │ VOCE                 │ OP.  │ QTA │ IMPORTO  │
+├───┼──────────────┼──────────────────────┼──────┼─────┼──────────┤
+│   │ [▼ Combo]    │ [▼ Combo]            │ [ ]  │ [ ] │ [auto €] │
+└───┴──────────────┴──────────────────────┴──────┴─────┴──────────┘
+FLUSSO INSERIMENTO MANUALE:
+Selezione Attività → filtra voci disponibili
+
+Selezione Voce → pre-compila alcuni valori
+
+Compilazione dati tecnici:
+
+N. Operatori
+
+Unità Misura (combo: MIN, ORE, MQ, ML, NR)
+
+Quantità
+
+Importo (calcolo automatico)
+
+GESTIONE MATERIALI (opzionale per voce):
+Codice Materiale (combo ricerca)
+
+Unità Misura Materiale
+
+Quantità Materiale
+
+Costo Unitario
+
+Totale Materiale (calcolo auto)
+
+SEZIONE 6 - TOTALI E IVA
+CALCOLI AUTOMATICI:
+Totale Attività = ∑(Importi voci)
+
+Totale Materiali = ∑(Materiali voci)
+
+Imponibile = Totale Attività + Totale Materiali
+
+IVA 22% = Calcolo automatico
+
+Totale Preventivo = Imponibile + IVA
+
+VISUALIZZAZIONE:
+text
+RIEPILOGO ECONOMICO:
+• Totale Attività: 1.250,00 €
+• Totale Materiali: 350,00 €
+• Imponibile: 1.600,00 €
+• IVA 22%: 352,00 €
+• TOTALE PREVENTIVO: 1.952,00 €
+🔧 FUNZIONALITÀ AVANZATE
+CALCOLI INTELLIGENTI:
+Importi automatici basati su operatori × tempo × tariffa
+
+Quantità materiali proporzionali a dimensioni barca (se modello)
+
+Totali in tempo reale ad ogni modifica
+
+GESTIONE STATI:
+Bozza (work in progress)
+
+Inviato (bloccato per modifiche)
+
+Accettato (genera credenziali cliente)
+
+Rifiutato (archiviato)
+
+CREDENZIALI CLIENTE:
+Generazione automatica username/password temporanea
+
+Associazione automatica al preventivo accettato
+
+Area clienti dedicata per monitoraggio lavori
+
+💾 SALVATAGGIO E GESTIONE
+PULSANTI AZIONE:
+Salva Bozza (salvataggio parziale)
+
+Anteprima PDF (visualizzazione preventivo cliente)
+
+Registra Preventivo (finalizza e genera credenziali)
+
+Annulla (torna alla lista)
+
+PERSISTENZA DATI:
+Salvataggio incrementale durante la compilazione
+
+Recupero bozze interrotte
+
+Versioning (modifiche tracciate)
+
+🎨 ASPETTI TECNICI UI/UX
+RESPONSIVE DESIGN:
+Layout adattabile a diverse dimensioni schermo
+
+Griglie con scroll orizzontale su mobile
+
+Modal sovrapposti non invasivi
+
+FEEDBACK VISIVO:
+Campi obbligatori evidenziati
+
+Calcoli in tempo reale
+
+Stati di caricamento durante operazioni
+
+Messaggi di conferma/errore
+
+NAVIGAZIONE:
+Torna alla lista preventivi in qualsiasi momento
+
+Progress indicator del flusso
+
+Breadcrumb di navigazione
+
+🔄 INTEGRAZIONI
+CON AREA SEGRETERIA:
+Dati cliente essenziali → completamento successivo
+
+Preventivo come base → ordine di lavoro
+
+Comunicazione automatica → notifiche segreteria
+
+CON AREA CLIENTI:
+Credenziali automatiche per preventivi accettati
+
+Stato lavorazioni in tempo reale
+
+Comunicazioni con il cantiere
+
+Questo riepilogo copre tutte le funzionalità concordate per un sistema completo e professionale di generazione preventivi.
+
+
+🔢 CAPITOLO AGGIUNTO: ALGORITMI DI CALCOLO DELLA VECCHIA PROCEDURA
+🎯 INTRODUZIONE
+Gli algoritmi ereditati dal sistema WinForms garantiscono coerenza dei calcoli e affidabilità dei preventivi. Questo capitolo documenta le formule e le logiche di calcolo da preservare nella migrazione a Blazor.
+
+🧮 1. ALGORITMO CALCOLO TOTALE VOCE SINGOLA
+VARIABILI DI INPUT:
+N_Operai - Numero operatori coinvolti
+
+UnitaMisura - Unità di misura lavoro (MIN, ORE, NR, ML, GG)
+
+QtaVoce - Quantità lavoro
+
+QtaMAT - Quantità materiale
+
+CostoMateriale - Costo unitario materiale
+
+LunghezzaBarca - Dimensioni imbarcazione
+
+LOGICA DI CALCOLO ATTIVITÀ:
+A. MISURA IN MINUTI ("min")
+csharp
+ImportoVoce = (TariffaOraria / 60) × N_Operai × QtaVoce
+Esempio: 2 operatori × 30 minuti × (€50/60) = €50,00
+
+B. MISURA IN ORE ("ore")
+csharp
+ImportoVoce = TariffaOraria × N_Operai × QtaVoce
+Esempio: 2 operatori × 2 ore × €50 = €200,00
+
+C. MISURA A NUMERO ("num")
+csharp
+ImportoVoce = TariffaOraria × N_Operai × QtaVoce
+Esempio: 1 operatore × 3 interventi × €50 = €150,00
+
+D. MISURA A METRI LINEARI ("ml")
+csharp
+ImportoVoce = (TariffaOraria / 60) × N_Operai × QtaVoce × LunghezzaBarca
+Esempio: 1 operatore × 10 min/m × 12m barca × (€50/60) = €100,00
+
+E. MISURA A GIORNI ("gg") - SOSTA
+csharp
+ImportoVoce = QtaVoce × ImportoGiornalieroSosta
+Esempio: 5 giorni × €30/giorno = €150,00
+
+LOGICA DI CALCOLO MATERIALI:
+A. MATERIALI STANDARD
+csharp
+ImportoMateriale = CostoMateriale × QtaMAT
+Esempio: Vernice €25/kg × 4 kg = €100,00
+
+B. MATERIALI PER METRO LINEARE ("kg/ml")
+csharp
+ImportoMateriale = (CostoMateriale × QtaMAT) × LunghezzaBarca
+Esempio: (€5/kg × 0.5 kg/ml) × 10m = €25,00
+
+TOTALE VOCE FINALE:
+csharp
+TotaleVoce = ImportoAttività + ImportoMateriali
+📊 2. ALGORITMO CALCOLO TOTALE PREVENTIVO
+PROCESSO DI SOMMATORIA:
+csharp
+double ImportoPreventivo = 0;
+
+foreach (var voce in GrigliaPreventivo)
+{
+    if (!string.IsNullOrEmpty(voce.Attività))
+    {
+        double importoVoce = ConvertiImportoDaFormatoItaliano(voce.TotaleVoce);
+        ImportoPreventivo += importoVoce;
+    }
+}
+GESTIONE FORMATO VALUTA ITALIANO:
+Rimozione simbolo "€"
+
+Gestione separatore decimale ","
+
+CultureInfo "it-IT" per parsing corretto
+
+Esempio conversione: "1.250,50 €" → 1250.50
+
+⚙️ 3. PARAMETRI DI SISTEMA
+TARIFFA ORARIA BASE:
+Program.ImportoPreventivo = Tariffa oraria standard (es. €50/ora)
+
+Valore centralizzato per calcoli coerenti
+
+Diviso per 60 per conversione minuti
+
+TARIFFA SOSTA:
+txtImportoSosta.Text = Costo giornaliero sosta
+
+Valore specifico per ogni preventivo
+
+Indipendente dalla tariffa oraria
+
+🔄 4. LOGICHE CONDIZIONALI
+CONTROLLO CARICAMENTO:
+csharp
+if (CaricamentoGriglia) return;
+Evita ricalcoli durante popolamento griglia
+
+Migliora performance durante operazioni batch
+
+GESTIONE MATERIALI OPZIONALI:
+csharp
+if (CodiceMateriale.Length > 0)
+{
+    // Calcola materiali
+}
+else
+{
+    ImportoMateriale = 0;
+}
+VALIDAZIONE INPUT:
+Controllo lunghezza testo prima conversioni
+
+TryParse per gestione errori
+
+Valori di default per campi vuoti
+
+🎯 5. APPLICAZIONE IN BLATOR
+PRESERVAZIONE INTEGRALE:
+Formule identiche per coerenza storica
+
+CultureInfo "it-IT" mantenuto
+
+Logica condizionale preservata
+
+MIGLIORAMENTI APPLICABILI:
+Parametri configurabili (tariffe in database)
+
+Gestione errori più robusta
+
+Calcoli reattivi in tempo reale
+
+INTEGRAZIONE CON MODELLI:
+Applicazione automatica quando si usa modello base
+
+Ricalcolo proporzionale basato su dimensioni barca
+
+Propagazione modifiche in cascata
+
+💡 NOTE TECNICHE IMPORTANTI
+PRECISIONE CALCOLI:
+Tipo double per importi e quantità
+
+Arrotondamento a 2 decimali per valuta
+
+Formattazione cultura italiana in UI
+
+DIPENDENZE DIMENSIONALI:
+Lunghezza barca critica per calcoli "ml" e "kg/ml"
+
+Superficie derivata (Lunghezza × Larghezza × Fattore)
+
+Parametri predefiniti per barche senza dimensioni complete
+
+GESTIONE VALUTE:
+Simbolo "€" aggiunto in visualizzazione
+
+Separatore migliaia "." e decimali ","
+
+Allineamento a standard contabilità italiana
+
+Questi algoritmi rappresentano il cuore del sistema di preventivazione e garantiscono coerenza con i calcoli storici dell'azienda.
+
+

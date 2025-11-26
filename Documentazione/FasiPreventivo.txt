@@ -1,0 +1,53 @@
+﻿FASE 1 - INFRASTRUTTURA SERVIZI
+Completare PreventiviService - CRUD preventivi + calcoli
+
+Creare ClientiService - Gestione clienti essenziali
+
+Creare ImbarcazioniService - Gestione barche essenziali
+
+Creare ModelliPreventiviService - Caricamento modelli
+
+🎯 FASE 2 - COMPONENTI MODAL
+Modal Nuovo Cliente - Dati essenziali (Nome, Indirizzo, Contatti)
+
+Modal Nuova Barca - Dati essenziali (Nome, Tipo, Lunghezza)
+
+Modal Voce Preventivo - Inserimento attività + materiali
+
+🎯 FASE 3 - ALGORITMI CALCOLO
+Implementare CalcolaTotaleVoce() - Algoritmo ereditato WinForms
+
+Implementare CalcolaTotalePreventivo() - Sommatoria voci
+
+Gestione IVA e totali automatici
+
+🎯 FASE 4 - INTEGRAZIONE DATABASE
+Connessione SQL Server - Configurazione connection string
+
+Query CRUD - Inserimento/lettura preventivi
+
+Transazioni - Salvataggio atomico preventivo + voci
+
+🎯 FASE 5 - FUNZIONALITÀ AVANZATE
+Applicazione modelli - Caricamento automatico voci
+
+Anteprima PDF - Generazione documento cliente
+
+Validazione dati - Controlli input obbligatori
+
+🎯 FASE 6 - DEEPSEEK INTEGRATION
+Assistente inserimento - Suggerimenti contestuali
+
+Generazione documenti - Email e PDF automatici
+
+Controlli qualità - Rilevamento anomalie
+
+📋 PRIORITÀ IMMEDIATE:
+Servizi base (Fase 1)
+
+Modal cliente/barca (Fase 2)
+
+Algoritmi calcolo (Fase 3)
+
+Iniziamo dalla Fase 1?
+

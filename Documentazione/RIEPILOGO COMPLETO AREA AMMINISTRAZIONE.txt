@@ -1,0 +1,141 @@
+MANUALE UTENTE - AREA AMMINISTRAZIONE
+Gestione Preventivi
+
+INTRODUZIONE
+L'Area Amministrazione per la Gestione Preventivi è il modulo operativo principale che consente di creare, modificare e gestire l'intero ciclo di vita dei preventivi del cantiere navale. Questo manuale descrive nel dettaglio tutte le funzionalità a disposizione degli operatori autorizzati.
+
+ACCESSO ALL'AREA AMMINISTRAZIONE
+Per accedere all'area riservata, selezionare "Area Riservata" dal menu principale e inserire le credenziali di amministratore. Una volta autenticati, il sistema mostrerà la dashboard principale con la griglia dei preventivi.
+
+GESTIONE ELENCO PREVENTIVI
+La schermata principale presenta una tabella completa di tutti i preventivi esistenti, organizzati con le seguenti informazioni:
+
+Numero univoco del preventivo
+
+Data di creazione e data di scadenza
+
+Nome del cliente e imbarcazione di riferimento
+
+Stato corrente del preventivo
+
+Importo totale calcolato
+
+Dall'elenco è possibile:
+
+Visualizzare in anteprima i dati essenziali
+
+Ordinare i preventivi per data, numero o importo
+
+Filtrare per stato o cliente
+
+Accedere alla modifica completa di un preventivo
+
+Eliminare preventivi obsoleti con doppia conferma
+
+CREAZIONE DI UN NUOVO PREVENTIVO
+Il processo di creazione si articola in tre fasi sequenziali:
+
+Selezione del Cliente e Imbarcazione
+In questa prima fase, l'operatore seleziona il cliente dall'anagrafica esistente. Una volta scelto il cliente, il sistema carica automaticamente tutte le imbarcazioni associate. Se necessario, è possibile creare nuovi clienti o nuove imbarcazioni direttamente dalla schermata di creazione tramite appositi moduli.
+
+Configurazione dei Dati Generali
+Il sistema assegna automaticamente un numero progressivo al preventivo. L'operatore imposta:
+
+La data di emissione (predefinita alla data corrente)
+
+La data di scadenza (predefinita a 30 giorni)
+
+Un titolo o descrizione significativa
+
+Lo stato iniziale (normalmente "Bozza")
+
+Composizione del Corpo Preventivo
+Questa è la fase più importante dove si definiscono le voci di lavoro e i materiali. Sono disponibili due approcci:
+
+Applicazione di modelli predefiniti per lavorazioni standard
+
+Inserimento manuale di voci personalizzate
+
+La struttura prevede una gerarchia di:
+
+Attività principali (es. "Carena", "Operazioni meccaniche")
+
+Voci specifiche per ogni attività (es. "Carteggiatura", "Verniciatura")
+
+Materiali associati a ogni voce (opzionale)
+
+MODIFICA DI PREVENTIVI ESISTENTI
+La schermata di modifica replica l'interfaccia di creazione ma con importanti differenze:
+
+I dati di cliente e imbarcazione sono bloccati per mantenere l'integrità storica
+
+Tutti gli altri campi sono modificabili
+
+Le voci del preventivo possono essere modificate direttamente in tabella
+
+Il sistema ricalcola automaticamente gli importi ad ogni modifica
+
+Le voci di dettaglio possono trovarsi in tre stati:
+
+Visualizzazione normale (dati in sola lettura)
+
+Modalità modifica (campi editabili)
+
+Conferma o annullamento delle modifiche
+
+SISTEMA DI CALCOLO AUTOMATICO
+Il sistema effettua calcoli complessi ereditati dalla precedente versione:
+
+Calcolo degli importi per le voci attività basato su operatori, tariffe orarie e quantità
+
+Calcolo dei costi materiali considerando quantità, prezzi unitari e sconti
+
+Sommatoria automatica di attività e materiali
+
+Calcolo dell'IVA al 22% sull'imponibile
+
+Aggiornamento in tempo reale del totale generale
+
+GESTIONE DEGLI STATI DEL PREVENTIVO
+Ogni preventivo attraversa diversi stati nel suo ciclo di vita:
+
+Bozza: preventivo in lavorazione, modificabile
+
+Inviato: preventivo inviato al cliente, ancora modificabile
+
+Accettato: preventivo accettato dal cliente
+
+Rifiutato: preventivo rifiutato dal cliente
+
+In Lavorazione: preventivo trasformato in ordine di lavoro
+
+Completato: lavorazioni terminate
+
+SALVATAGGIO E CONFERME
+Il sistema richiede conferma per tutte le operazioni critiche:
+
+Conferma prima dell'annullamento di una modifica
+
+Conferma prima del salvataggio delle modifiche
+
+Doppia conferma prima dell'eliminazione di un preventivo
+
+Messaggi di successo/errore per ogni operazione
+
+DIRETTIVE PER LA NUOVA CHAT - INVIO PREVENTIVI
+Per la prossima sessione di sviluppo, concentrarci sul processo di invio dei preventivi ai clienti, includendo:
+
+Generazione del documento PDF con formattazione professionale
+
+Sistema di invio email integrato
+
+Gestione allegati e documentazione
+
+Cambio automatico di stato da "Bozza" a "Inviato"
+
+Tracciamento degli invii e delle visualizzazioni
+
+Integrazione con il sistema di archiviazione documentale
+
+CONCLUSIONE
+Il modulo di Gestione Preventivi rappresenta il cuore operativo del sistema, combinando potenza di calcolo con semplicità d'uso. La progettazione modulare consente di estendere le funzionalità mantenendo la coerenza dell'interfaccia utente.

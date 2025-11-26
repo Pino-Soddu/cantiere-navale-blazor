@@ -1,0 +1,140 @@
+﻿📋 RIEPILOGO TECNICO PER LO SVILUPPO
+
+ARCHITETTURA GENERALE
+
+Blazor Server Application con SQL Server Express
+
+VPS Aruba come hosting
+
+Separazione netta tra: Pubblica, Area Clienti, Area Segreteria, Area Amministrazione
+
+🎯 BLOCCO 1 - HOMEPAGE PUBBLICA
+
+CHAT PUBBLICA DEEPSEEK
+
+✅ Descrizione lavorazioni (carteggiatura, verniciatura, etc.)
+
+✅ Preventivi indicativi SOLO per manutenzione ordinaria
+
+✅ Informazioni generiche materiali/processi
+
+❌ NO prezzi lavorazioni specifiche
+
+❌ NO accesso dati clienti
+
+❌ NO memorizzazione conversazioni
+
+MODELLI MANUTENZIONE ORDINARIA
+
+Base (barche fino a 8m)
+
+Completa (barche 8-12m)
+
+Premium (barche oltre 12m)
+
+INTERFACCIA
+
+Header: Logo | Area Clienti | Area Riservata | Contatti
+
+Corpo: Chat DeepSeek pubblica centrale
+
+Footer: Info contatto e servizi
+
+👥 BLOCCO 2 - AREA CLIENTI
+
+ACCESSO CLIENTI
+
+Credenziali specifiche per ogni imbarcazione
+
+Formato: CodiceCliente + Password generata
+
+Cambio password obbligatorio primo accesso
+
+ESPERIENZA CLIENTE
+
+text
+Assistente: Buongiorno Signor Rossi!
+           Vuole conoscere lo stato di lavorazione 
+           della sua barca "Blue Wave"?
+           [SÌ, GRAZIE] [PIÙ TARDI]
+FUNZIONALITÀ CLIENTE
+
+Stato lavorazioni in tempo reale
+
+Foto e note tecniche
+
+Assistente DeepSeek dedicato (accesso dati specifici)
+
+Comunicazioni con il cantiere
+
+❌ NO documenti finanziari/pagamenti
+
+📊 BLOCCO 3 - AREA SEGRETERIA
+
+ACCESSO SEGRETERIA
+
+Credenziali specifiche per utenti segreteria
+
+Accesso limitato alle sole anagrafiche
+
+INTERFACCIA CONVERSAZIONALE
+
+text
+Assistente: Buongiorno Maria, benvenuta nell'Area Segreteria.
+
+Ecco cosa puoi fare:
+• Aggiungere nuovi elementi
+• Modificare elementi esistenti  
+• Eliminare elementi
+• Cercare elementi specifici
+• Caricare dati da file
+• Esportare elenchi
+
+Scrivi "altro" per vedere altre operazioni
+
+Cosa vuoi fare?
+METODO IBRIDO DI LAVORO
+
+Chat per richiedere operazioni
+
+Griglia editabile per eseguire (solo righe evidenziate)
+
+Colori semantici: Verde (nuovo), Giallo (modifica), Rosso (elimina)
+
+ANAGRAFICHE GESTITE
+
+Clienti
+
+Fornitori
+
+Attività
+
+Materiali
+
+🔐 GERARCHIA ACCESSI
+
+Pubblica: Chat generale - Dati limitati
+
+Clienti: Accesso singola imbarcazione - Dati specifici
+
+Segreteria: Tutte le anagrafiche - NO dati finanziari
+
+Amministrazione: Accesso completo
+
+TECNICHE DA MANTENERE DAL C# WINFORMS
+
+Formule e algoritmi preventivi
+
+Struttura dati anagrafiche
+
+Logica calcoli lavorazioni
+
+DA RISCRIVERE
+
+Interfaccia utente (WinForms → Blazor)
+
+Gestione stato applicazione
+
+Sistema autenticazione
+
+Questo riepilogo mi fornisce tutte le direttive necessarie per iniziare lo sviluppo dei primi due blocchi. Quando sarai pronto, potrò procedere con l'implementazione mantenendo perfetta coerenza con quanto definito.

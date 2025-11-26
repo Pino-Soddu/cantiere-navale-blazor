@@ -1,0 +1,88 @@
+DOCUMENTO DI RIEPILOGO - SISTEMA DI AUTENTICAZIONE
+ARCHITETTURA GENERALE
+Tipo: Blazor Server Application
+
+Autenticazione: Personalizzata con ruoli gerarchici
+
+Database: SQL Server Express
+
+TIPOLOGIE DI ACCESSO
+1. OPERATORI INTERNI
+Tabella DB: Operatori
+
+Campi: Id, Cognome, Nome, Codice, UserName, Password, Ruolo
+
+Ruoli: Segreteria, Operaio, Amministrazione
+
+2. CLIENTI
+Metodo: Credenziali algoritmiche (nessuna tabella dedicata)
+
+Formato Username: CLI{codiceCliente}_{abbreviazioneBarca}
+
+Generazione: Automatica alla conferma preventivo
+
+COMPONENTI PRINCIPALI
+SERVIZI
+LoginService - Autenticazione operatori
+
+CredenzialiClienteService - Generazione credenziali clienti
+
+GestoreStatoLogin - Gestione stato autenticazione
+
+COMPONENTI UI
+ModaleLogin.razor - Interfaccia login unificata
+
+MainLayout.razor - Integrazione menu di navigazione
+
+FLUSSO DI ACCESSO
+PER OPERATORI
+Click su "Area Riservata" nel menu
+
+Selezione sottomenu (Segreteria/Scheda Lavorazione/Amministrazione)
+
+Apertura modale login
+
+Verifica credenziali contro tabella Operatori
+
+Controllo permessi in base al ruolo
+
+Reindirizzamento all'area autorizzata
+
+PER CLIENTI
+Click su "Area Clienti" nel menu
+
+Apertura modale login
+
+Inserimento credenziali ricevute via email
+
+Verifica algoritmo (nessuna query DB)
+
+Accesso all'area clienti dedicata
+
+GERARCHIA PERMESSI
+RUOLO	SEGRETERIA	SCHEDA LAVORAZIONE	AMMINISTRAZIONE	CLIENTI
+Segreteria	✅	❌	❌	❌
+Operaio	❌	✅	❌	❌
+Amministrazione	✅	✅	✅	❌
+Cliente	❌	❌	❌	✅
+SICUREZZA
+Controllo ruoli prima del reindirizzamento
+
+Sessioni Blazor Server gestite automaticamente
+
+Messaggi di errore generici (no informazioni sensibili)
+
+FILE PRINCIPALI
+Login/Models/LoginRequest.cs
+
+Login/Models/LoginResponse.cs
+
+Login/Services/LoginService.cs
+
+Login/Services/GestoreStatoLogin.cs
+
+Login/Components/ModaleLogin.razor
+
+MainLayout.razor
+
+Questo documento può essere espanso con dettagli tecnici aggiuntivi su richiesta.
